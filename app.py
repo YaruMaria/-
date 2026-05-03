@@ -1,95 +1,96 @@
-from flask import Flask, render_template, redirect, url_for, flash, request
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from flask_bcrypt import Bcrypt
 import os
+from flask import Flask, render_template, redirect, url_for, request, flash
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your_secret_key_here'
-# Файл базы данных будет создан в папке проекта под именем database.db
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = 'dev-key-12345'  # Секретный ключ для сессий
 
-db = SQLAlchemy(app)
-bcrypt = Bcrypt(app)
-login_manager = LoginManager(app)
-login_manager.login_view = 'login'
+# Настройка менеджера авторизации
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'  # Куда перенаправлять неавторизованных
+login_manager.login_message = "Пожалуйста, войдите, чтобы увидеть эту страницу."
 
-# --- МОДЕЛИ БАЗЫ ДАННЫХ ---
+# Временная база данных в памяти (Имя: {пароль, id})
+# В реальном проекте здесь должна быть база данных (SQLite/PostgreSQL)
+users_db = {
+    "admin": {"password": generate_password_hash("1234"), "id": "1"}
+}
 
-class User(db.Model, UserMixin):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), unique=True, nullable=False)
-    password = db.Column(db.String(100), nullable=False)
-    # Связь с записями: один пользователь может иметь много записей
-    records = db.relationship('Record', backref='owner', lazy=True)
 
-class Record(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    content = db.Column(db.Text, nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+# Класс пользователя для Flask-Login
+class User(UserMixin):
+    def __init__(self, id, username):
+        self.id = id
+        self.username = username
+
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    for username, data in users_db.items():
+        if data['id'] == user_id:
+            return User(user_id, username)
+    return None
 
-# --- МАРШРУТЫ (ROUTES) ---
 
+# ГЛАВНАЯ СТРАНИЦА (теперь закрыта декоратором)
 @app.route('/')
+@login_required
 def index():
-    return render_template('index.html')
+    return render_template('index.html', name=current_user.username)
 
+
+# СТРАНИЦА ВХОДА
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        user_data = users_db.get(username)
+        if user_data and check_password_hash(user_data['password'], password):
+            user_obj = User(user_data['id'], username)
+            login_user(user_obj)
+            return redirect(url_for('index'))
+        else:
+            flash('Неверное имя пользователя или пароль')
+
+    return render_template('login.html')
+
+
+# РЕГИСТРАЦИЯ
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        # Хешируем пароль для безопасности
-        hashed_pw = bcrypt.generate_password_hash(request.form['password']).decode('utf-8')
-        new_user = User(username=request.form['username'], password=hashed_pw)
-        try:
-            db.session.add(new_user)
-            db.session.commit()
-            flash('Аккаунт создан! Теперь вы можете войти.')
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        if username in users_db:
+            flash('Пользователь уже существует')
+        else:
+            # Добавляем в нашу "базу"
+            new_id = str(len(users_db) + 1)
+            users_db[username] = {
+                "password": generate_password_hash(password),
+                "id": new_id
+            }
+            flash('Регистрация успешна! Теперь войдите.')
             return redirect(url_for('login'))
-        except:
-            flash('Такой пользователь уже существует.')
+
     return render_template('register.html')
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        user = User.query.filter_by(username=request.form['username']).first()
-        if user and bcrypt.check_password_hash(user.password, request.form['password']):
-            login_user(user)
-            return redirect(url_for('dashboard'))
-        else:
-            flash('Ошибка входа. Проверьте логин и пароль.')
-    return render_template('login.html')
 
-@app.route('/dashboard')
-@login_required
-def dashboard():
-    # Показываем только те записи, которые принадлежат вошедшему пользователю
-    user_records = Record.query.filter_by(user_id=current_user.id).all()
-    return render_template('dashboard.html', records=user_records)
-
-# ЭТОТ БЛОК МЫ ДОБАВИЛИ: Сохранение данных в базу
-@app.route('/add_record', methods=['POST'])
-@login_required
-def add_record():
-    content = request.form.get('content')
-    if content:
-        # Создаем запись и привязываем её к ID текущего пользователя
-        new_record = Record(content=content, user_id=current_user.id)
-        db.session.add(new_record)
-        db.session.commit()
-    return redirect(url_for('dashboard'))
-
+# ВЫХОД
 @app.route('/logout')
+@login_required
 def logout():
     logout_user()
-    return redirect(url_for('index'))
+    return redirect(url_for('login'))
+
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all() # Создает таблицы, если их еще нет
     app.run(debug=True)

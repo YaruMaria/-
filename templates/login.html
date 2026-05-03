@@ -1,9 +1,25 @@
-{% extends "base.html" %}
-{% block content %}
-<h2>Вход</h2>
-<form action="/login" method="POST"> <!-- Отправляет данные на проверку входа -->
-    <input type="text" name="username" placeholder="Ваш логин" required>
-    <input type="password" name="password" placeholder="Ваш пароль" required>
-    <button type="submit">Войти</button>
-</form>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Вход для учителей</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="auth-card">
+        <h2>Личный кабинет</h2>
+        <form method="post">
+            <div class="input-group">
+                <input type="text" name="username" placeholder="Имя пользователя" required>
+            </div>
+            <div class="input-group">
+                <input type="password" name="password" placeholder="Пароль" required>
+            </div>
+            <button type="submit">Войти в систему</button>
+        </form>
+        <div class="links">
+            <p>Нет аккаунта? <a href="{{ url_for('register') }}">Зарегистрироваться</a></p>
+        </div>
+    </div>
+</body>
+</html>

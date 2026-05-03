@@ -1,9 +1,27 @@
-{% extends "base.html" %}
-{% block content %}
-<h2>Создать аккаунт</h2>
-<form action="/register" method="POST"> <!-- Отправляет данные на регистрацию -->
-    <input type="text" name="username" placeholder="Придумайте логин" required>
-    <input type="password" name="password" placeholder="Придумайте пароль" required>
-    <button type="submit">Зарегистрироваться</button>
-</form>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Регистрация учителя</title>
+    <!-- Подключаем тот же файл стилей -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="auth-card">
+        <h2>Создать аккаунт</h2>
+        <form method="post">
+            <div class="input-group">
+                <input type="text" name="username" placeholder="Придумайте логин" required>
+            </div>
+            <div class="input-group">
+                <input type="password" name="password" placeholder="Придумайте пароль" required>
+            </div>
+            <!-- Кнопка автоматически станет стильной благодаря CSS -->
+            <button type="submit">Зарегистрироваться</button>
+        </form>
+        <div class="links">
+            <p>Уже есть аккаунт? <a href="{{ url_for('login') }}">Войти</a></p>
+        </div>
+    </div>
+</body>
+</html>
