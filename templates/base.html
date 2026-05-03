@@ -2,69 +2,183 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Музыкальная школа</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Музыкальная школа{% endblock %}</title>
     <style>
-        body {
-            font-family: 'Comic Sans MS', cursive, sans-serif;
+        * {
             margin: 0;
-            padding: 20px;
-            background: #f0f7ff;
+            padding: 0;
+            box-sizing: border-box;
         }
-        nav {
-            background: #1e293b;
-            padding: 15px 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            color: white;
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            padding: 1rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
-        nav a {
-            color: #38bdf8;
+
+        .nav-brand {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
             text-decoration: none;
-            margin-left: 15px;
-            padding: 5px 10px;
-            border-radius: 5px;
         }
-        nav a:hover {
-            background: #334155;
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            flex-wrap: wrap;
         }
+
+        .nav-links a {
+            color: #4a5568;
+            text-decoration: none;
+            transition: color 0.3s;
+            font-weight: 500;
+        }
+
+        .nav-links a:hover {
+            color: #667eea;
+        }
+
+        .user-info {
+            color: #667eea;
+            font-weight: 500;
+        }
+
         .flash-messages {
-            max-width: 600px;
-            margin: 10px auto;
-            padding: 10px;
-            background: #ffeb3b;
-            border-radius: 5px;
-            text-align: center;
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 350px;
+        }
+
+        .flash-message {
+            padding: 12px 20px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            color: white;
+            animation: slideIn 0.3s ease-out;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .flash-success { background: linear-gradient(135deg, #11998e, #38ef7d); }
+        .flash-error { background: linear-gradient(135deg, #eb3349, #f45c43); }
+        .flash-info { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #eb3349, #f45c43);
+            color: white;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: #2d3748;
         }
     </style>
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <nav>
-        <div>🎵 Музыкальная школа 🎵</div>
-        <div>
+    <nav class="navbar">
+        <a href="{{ url_for('dashboard') }}" class="nav-brand">🎵 Музыкальная школа</a>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}">📊 Кабинет</a>
+            <a href="{{ url_for('music_school') }}">🎮 Играть</a>
             {% if current_user.is_authenticated %}
-                <span>Привет, {{ current_user.username }}! 👋</span>
-                <a href="{{ url_for('music_school') }}">Играть</a>
-                <a href="{{ url_for('logout') }}">Выйти</a>
-            {% else %}
-                <a href="{{ url_for('login') }}">Войти</a>
-                <a href="{{ url_for('register') }}">Регистрация</a>
+                <span class="user-info">👋 {{ current_user.full_name or current_user.username }}</span>
+                <a href="{{ url_for('logout') }}">🚪 Выйти</a>
             {% endif %}
         </div>
     </nav>
 
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            <div class="flash-messages">
-                {% for message in messages %}
-                    <div>{{ message }}</div>
+    <div class="flash-messages">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
                 {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
+            {% endif %}
+        {% endwith %}
+    </div>
 
-    {% block content %}{% endblock %}
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script>
+        setTimeout(() => {
+            document.querySelectorAll('.flash-message').forEach(msg => {
+                msg.style.transition = 'opacity 0.5s';
+                msg.style.opacity = '0';
+                setTimeout(() => msg.remove(), 500);
+            });
+        }, 4000);
+    </script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

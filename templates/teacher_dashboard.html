@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+<div>
+    <h1>👨‍🏫 Добро пожаловать, {{ user.full_name }}!</h1>
+    <p style="color: #666; margin-bottom: 2rem;">
+        📚 Ваш предмет: <strong>{{ user.subject or 'Не указан' }}</strong>
+    </p>
+
+    <div class="card">
+        <h2>🎓 Мои ученики</h2>
+        
+        {% if students %}
+            <div style="display: grid; gap: 1rem; margin-top: 1rem;">
+                {% for student in students %}
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #f7fafc; border-radius: 12px;">
+                    <div>
+                        <strong>{{ student.name }}</strong>
+                        {% if student.level %}
+                        <span style="margin-left: 10px; color: #667eea;">({{ student.level }})</span>
+                        {% endif %}
+                    </div>
+                    <a href="{{ url_for('delete_student', student_id=student.id) }}" 
+                       class="btn btn-danger" 
+                       style="padding: 5px 15px;"
+                       onclick="return confirm('Удалить ученика?')">
+                        ❌ Удалить
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p style="color: #666;">У вас пока нет учеников</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2>➕ Добавить ученика</h2>
+        <form method="post" action="{{ url_for('add_student') }}">
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <input type="text" name="student_name" placeholder="Имя ученика" required
+                       style="flex: 2; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                <input type="text" name="student_level" placeholder="Уровень (опционально)"
+                       style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                <button type="submit" class="btn btn-primary">➕ Добавить</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>🎮 Быстрый доступ</h2>
+        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+            <a href="{{ url_for('music_school') }}" class="btn btn-primary">🎵 Играть в музыкальную игру</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

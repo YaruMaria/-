@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<div>
+    <h1>🎓 Добро пожаловать, {{ user.full_name }}!</h1>
+    
+    <div class="card">
+        <h2>✨ Ваш профиль</h2>
+        <p><strong>📝 Логин:</strong> {{ user.username }}</p>
+        <p><strong>📅 Дата регистрации:</strong> {{ user.created_at.strftime('%d.%m.%Y') if user.created_at else 'Недавно' }}</p>
+    </div>
+
+    <div class="card">
+        <h2>🎵 Ваши достижения</h2>
+        <p style="color: #666;">Играйте в музыкальную игру, чтобы получать звезды и коллекционировать награды!</p>
+        <div style="margin-top: 1rem;">
+            <a href="{{ url_for('music_school') }}" class="btn btn-primary">🎮 Начать игру</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>📊 Статистика</h2>
+        <p>Пока здесь пусто... Начните играть, чтобы появились ваши достижения!</p>
+    </div>
+</div>
+{% endblock %}

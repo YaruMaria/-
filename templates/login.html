@@ -1,22 +1,30 @@
 {% extends "base.html" %}
 {% block content %}
-<div style="max-width: 400px; margin: 50px auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
-    <h2 style="text-align: center; color: #ff85a2;">Вход в Музыкальную школу</h2>
-    <form method="post">
-        <div style="margin-bottom: 15px;">
-            <input type="text" name="username" placeholder="Имя пользователя" required 
-                   style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 10px;">
-        </div>
-        <div style="margin-bottom: 15px;">
-            <input type="password" name="password" placeholder="Пароль" required
-                   style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 10px;">
-        </div>
-        <button type="submit" style="width: 100%; padding: 10px; background: #ff85a2; color: white; border: none; border-radius: 10px; font-size: 16px; cursor: pointer;">
-            Войти
-        </button>
-    </form>
-    <p style="text-align: center; margin-top: 15px;">
-        Нет аккаунта? <a href="{{ url_for('register') }}" style="color: #ff85a2;">Зарегистрироваться</a>
-    </p>
+<div style="max-width: 400px; margin: 0 auto;">
+    <div class="card">
+        <h1 style="text-align: center;">🎵 Вход в школу</h1>
+
+        <form method="post">
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">🔑 Логин</label>
+                <input type="text" name="username" required
+                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">🔒 Пароль</label>
+                <input type="password" name="password" required
+                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 16px;">
+                🎶 Войти
+            </button>
+        </form>
+
+        <p style="text-align: center; margin-top: 1rem;">
+            Нет аккаунта? <a href="{{ url_for('register') }}" style="color: #667eea;">Зарегистрироваться</a>
+        </p>
+    </div>
 </div>
 {% endblock %}

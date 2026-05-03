@@ -1,22 +1,78 @@
 {% extends "base.html" %}
 {% block content %}
-<div style="max-width: 400px; margin: 50px auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
-    <h2 style="text-align: center; color: #ff85a2;">Регистрация</h2>
-    <form method="post">
-        <div style="margin-bottom: 15px;">
-            <input type="text" name="username" placeholder="Придумайте логин" required
-                   style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 10px;">
-        </div>
-        <div style="margin-bottom: 15px;">
-            <input type="password" name="password" placeholder="Придумайте пароль" required
-                   style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 10px;">
-        </div>
-        <button type="submit" style="width: 100%; padding: 10px; background: #7fb3ff; color: white; border: none; border-radius: 10px; font-size: 16px; cursor: pointer;">
-            Зарегистрироваться
-        </button>
-    </form>
-    <p style="text-align: center; margin-top: 15px;">
-        Уже есть аккаунт? <a href="{{ url_for('login') }}" style="color: #7fb3ff;">Войти</a>
-    </p>
+<div style="max-width: 500px; margin: 0 auto;">
+    <div class="card">
+        <h1 style="text-align: center;">✨ Регистрация</h1>
+
+        <form method="post">
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">👤 Полное имя</label>
+                <input type="text" name="full_name" value="{{ full_name or '' }}" required
+                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">🔑 Логин</label>
+                <input type="text" name="username" value="{{ username or '' }}" required
+                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                <small style="color: #666;">Минимум 3 символа</small>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">🔒 Пароль</label>
+                <input type="password" name="password" required
+                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                <small style="color: #666;">Минимум 4 символа</small>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">✅ Подтвердите пароль</label>
+                <input type="password" name="confirm_password" required
+                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">👨‍🏫 Кто вы?</label>
+                <select name="role" id="role" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;"
+                        onchange="toggleSubjectField()">
+                    <option value="">Выберите...</option>
+                    <option value="teacher" {% if role == 'teacher' %}selected{% endif %}>👨‍🏫 Учитель</option>
+                    <option value="student" {% if role == 'student' %}selected{% endif %}>🎓 Ученик</option>
+                </select>
+            </div>
+
+            <div id="subjectField" style="margin-bottom: 1rem; display: none;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">📚 Какой предмет вы преподаете?</label>
+                <select name="subject" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                    <option value="">Выберите...</option>
+                    <option value="piano" {% if subject == 'piano' %}selected{% endif %}>🎹 Фортепиано</option>
+                    <option value="guitar" {% if subject == 'guitar' %}selected{% endif %}>🎸 Гитара</option>
+                    <option value="violin" {% if subject == 'violin' %}selected{% endif %}>🎻 Скрипка</option>
+                    <option value="drums" {% if subject == 'drums' %}selected{% endif %}>🥁 Ударные</option>
+                    <option value="vocals" {% if subject == 'vocals' %}selected{% endif %}>🎤 Вокал</option>
+                    <option value="theory" {% if subject == 'theory' %}selected{% endif %}>📖 Теория музыки</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 16px;">
+                🚀 Зарегистрироваться
+            </button>
+        </form>
+
+        <p style="text-align: center; margin-top: 1rem;">
+            Уже есть аккаунт? <a href="{{ url_for('login') }}" style="color: #667eea;">Войти</a>
+        </p>
+    </div>
 </div>
+
+<script>
+    function toggleSubjectField() {
+        const role = document.getElementById('role').value;
+        const subjectField = document.getElementById('subjectField');
+        subjectField.style.display = role === 'teacher' ? 'block' : 'none';
+    }
+
+    // Вызываем при загрузке
+    toggleSubjectField();
+</script>
 {% endblock %}
