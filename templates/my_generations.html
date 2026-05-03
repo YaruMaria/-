@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<div>
+    <h1>📜 Мои сохранённые генерации</h1>
+    
+    {% if generations %}
+        <div style="display: grid; gap: 1rem; margin-top: 1rem;">
+            {% for gen in generations %}
+            <div class="card" style="padding: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                    <div>
+                        <span class="btn" style="background: #f0f0f0; font-size: 12px; padding: 2px 8px;">{{ gen.template_type }}</span>
+                        <span style="font-size: 12px; color: #888; margin-left: 10px;">{{ gen.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                    </div>
+                    <a href="{{ url_for('delete_generation', gen_id=gen.id) }}" class="btn btn-danger" style="padding: 2px 10px;" onclick="return confirm('Удалить?')">🗑</a>
+                </div>
+                <div style="margin-top: 10px; white-space: pre-wrap; background: #f7fafc; padding: 10px; border-radius: 8px;">
+                    {{ gen.result[:200] }}{% if gen.result|length > 200 %}...{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card" style="text-align: center;">
+            <p>У вас пока нет сохранённых генераций</p>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Создать первую генерацию</a>
+        </div>
+    {% endif %}
+    
+    <div style="margin-top: 2rem;">
+        <a href="{{ url_for('dashboard') }}" class="btn" style="background: #666;">← Назад</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+    <div class="card">
+        <h1 style="text-align: center;">❓ {{ quiz.name }}</h1>
+
+        <div id="quizContainer">
+            <div id="currentQuestion">
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <h3 id="questionCounter">Вопрос 1 из {{ questions|length }}</h3>
+                    <div style="background: #f0f0f0; border-radius: 10px; height: 10px; margin: 1rem 0;">
+                        <div id="progressBar" style="background: #667eea; height: 10px; border-radius: 10px; width: 0%;"></div>
+                    </div>
+                </div>
+
+                <div id="imageContainer" style="text-align: center; margin-bottom: 2rem;">
+                    <img id="questionImage" src="" style="max-width: 400px; max-height: 300px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                </div>
+
+                <div id="optionsContainer" style="display: grid; gap: 1rem;">
+                    <button class="option-btn" data-value="A"></button>
+                    <button class="option-btn" data-value="Б"></button>
+                    <button class="option-btn" data-value="В"></button>
+                    <button class="option-btn" data-value="Г"></button>
+                </div>
+
+                <div style="margin-top: 2rem; text-align: center; display: flex; gap: 1rem; justify-content: center;">
+                    <button id="nextBtn" class="btn btn-primary" style="background: #667eea; display: none;">Следующий вопрос →</button>
+                    <button id="finishBtn" class="btn btn-primary" style="background: #10b981; display: none;">🏆 Завершить викторину</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="resultArea" style="display: none; text-align: center;">
+            <div id="resultMessage"></div>
+            <button onclick="location.reload()" class="btn btn-primary">🔄 Играть снова</button>
+            <a href="{{ url_for('dashboard') }}" class="btn">🏠 На главную</a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .option-btn {
+        padding: 15px 20px;
+        border: 2px solid #ddd;
+        border-radius: 12px;
+        background: white;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-align: left;
+    }
+    .option-btn:hover {
+        background: #f0f0f0;
+        transform: translateX(5px);
+    }
+    .option-btn.selected {
+        border-color: #667eea;
+        background: #e0e7ff;
+    }
+    .option-btn.correct {
+        border-color: #10b981;
+        background: #d1fae5;
+    }
+    .option-btn.wrong {
+        border-color: #ef4444;
+        background: #fee2e2;
+    }
+    .option-btn.disabled {
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+</style>
+
+<script>
+    const questions = {{ questions|tojson }};
+    console.log("Загружено вопросов:", questions.length);
+
+    let currentIndex = 0;
+    let userAnswers = {};
+    let gameFinished = false;
+
+    const questionImage = document.getElementById('questionImage');
+    const optionBtns = document.querySelectorAll('.option-btn');
+    const nextBtn = document.getElementById('nextBtn');
+    const finishBtn = document.getElementById('finishBtn');
+    const questionCounterSpan = document.getElementById('questionCounter');
+    const progressBar = document.getElementById('progressBar');
+
+    function loadQuestion() {
+        const question = questions[currentIndex];
+        if (!question) return;
+
+        questionImage.src = question.image_url;
+
+        // Устанавливаем текст кнопок
+        optionBtns.forEach(btn => {
+            const value = btn.dataset.value;
+            if (value === 'A') btn.textContent = `А) ${question.option_a}`;
+            if (value === 'Б') btn.textContent = `Б) ${question.option_b}`;
+            if (value === 'В') btn.textContent = `В) ${question.option_c}`;
+            if (value === 'Г') btn.textContent = `Г) ${question.option_d}`;
+
+            btn.classList.remove('selected', 'correct', 'wrong', 'disabled');
+            btn.disabled = false;
+        });
+
+        // Если уже был ответ на этот вопрос, подсвечиваем его
+        if (userAnswers[currentIndex]) {
+            const savedAnswer = userAnswers[currentIndex];
+            optionBtns.forEach(btn => {
+                if (btn.dataset.value === savedAnswer) {
+                    btn.classList.add('selected');
+                }
+            });
+        }
+
+        questionCounterSpan.textContent = `Вопрос ${currentIndex + 1} из ${questions.length}`;
+        const progress = (currentIndex / questions.length) * 100;
+        progressBar.style.width = `${progress}%`;
+
+        // Показываем кнопки навигации
+        nextBtn.style.display = currentIndex < questions.length - 1 ? 'block' : 'none';
+        finishBtn.style.display = currentIndex === questions.length - 1 ? 'block' : 'none';
+    }
+
+    function selectOption(letter) {
+        if (gameFinished) return;
+
+        // Сохраняем ответ
+        userAnswers[currentIndex] = letter;
+
+        // Подсвечиваем выбранный вариант
+        optionBtns.forEach(btn => {
+            if (btn.dataset.value === letter) {
+                btn.classList.add('selected');
+            } else {
+                btn.classList.remove('selected');
+            }
+        });
+    }
+
+    function nextQuestion() {
+        if (currentIndex < questions.length - 1) {
+            currentIndex++;
+            loadQuestion();
+        }
+    }
+
+    async function finishQuiz() {
+        // Проверяем, все ли вопросы отвечены
+        if (Object.keys(userAnswers).length < questions.length) {
+            alert(`Ответьте на все вопросы! Отвечено ${Object.keys(userAnswers).length} из ${questions.length}`);
+            return;
+        }
+
+        console.log("Отправляемые ответы:", userAnswers);
+
+        gameFinished = true;
+
+        // Отключаем все кнопки
+        optionBtns.forEach(btn => {
+            btn.disabled = true;
+            btn.classList.add('disabled');
+        });
+
+        // Отправляем результаты на сервер
+        const response = await fetch('/check_quiz_result', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                quiz_id: {{ quiz.id }},
+                answers: userAnswers
+            })
+        });
+
+        const result = await response.json();
+        console.log("Результат от сервера:", result);
+
+        document.getElementById('quizContainer').style.display = 'none';
+        document.getElementById('resultArea').style.display = 'block';
+
+        const messageDiv = document.getElementById('resultMessage');
+        if (result.passed) {
+            messageDiv.innerHTML = `
+                <div style="background: #d1fae5; padding: 2rem; border-radius: 16px;">
+                    <h2 style="color: #10b981;">🎉 ПОЗДРАВЛЯЮ! 🎉</h2>
+                    <p style="font-size: 24px;">Правильных ответов: ${result.correct} из ${result.total}</p>
+                    <p>Ваш результат: ${Math.round(result.score)}%</p>
+                    <p style="margin-top: 20px;">⭐ Вы заработали звезду!</p>
+                </div>
+            `;
+
+            setTimeout(() => {
+                window.location.href = '/select_student_for_quiz';
+            }, 1500);
+        } else {
+            // Показываем ошибки
+            let wrongAnswers = '';
+            for (let i = 0; i < questions.length; i++) {
+                if (userAnswers[i] !== questions[i].correct_answer) {
+                    let correctLetter = questions[i].correct_answer;
+                    let correctText = "";
+                    if (correctLetter === 'A') correctText = questions[i].option_a;
+                    if (correctLetter === 'Б') correctText = questions[i].option_b;
+                    if (correctLetter === 'В') correctText = questions[i].option_c;
+                    if (correctLetter === 'Г') correctText = questions[i].option_d;
+                    wrongAnswers += `<p>❌ Вопрос ${i+1}: правильный ответ - ${correctLetter}) ${correctText}</p>`;
+                }
+            }
+
+            messageDiv.innerHTML = `
+                <div style="background: #fee2e2; padding: 2rem; border-radius: 16px;">
+                    <h2 style="color: #ef4444;">😔 Попробуйте еще раз!</h2>
+                    <p>Правильных ответов: ${result.correct} из ${result.total}</p>
+                    <p>Нужно набрать 70% чтобы получить звезду.</p>
+                    <div style="margin-top: 1rem; text-align: left;">
+                        <strong>Ошибки:</strong>
+                        ${wrongAnswers}
+                    </div>
+                    <button onclick="location.reload()" class="btn btn-primary" style="margin-top: 1rem;">🔄 Попробовать снова</button>
+                </div>
+            `;
+        }
+    }
+
+    // Назначаем обработчики
+    optionBtns.forEach(btn => {
+        btn.addEventListener('click', () => selectOption(btn.dataset.value));
+    });
+
+    nextBtn.addEventListener('click', nextQuestion);
+    finishBtn.addEventListener('click', finishQuiz);
+
+    // Загружаем первый вопрос
+    if (questions.length > 0) {
+        loadQuestion();
+    } else {
+        document.getElementById('quizContainer').innerHTML = '<p style="text-align: center;">В этой викторине пока нет вопросов</p>';
+    }
+</script>
+{% endblock %}

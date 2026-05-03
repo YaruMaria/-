@@ -61,6 +61,7 @@ class User(UserMixin, db.Model):
     students = db.relationship('Student', backref='teacher', lazy=True)
     games = db.relationship('Game', backref='creator', lazy=True)
     puzzle_games = db.relationship('PuzzleGame', backref='creator', lazy=True)
+    quiz_games = db.relationship('QuizGame', backref='creator', lazy=True)
 
 
 class Student(db.Model):
@@ -107,20 +108,22 @@ class StarHistory(db.Model):
     student_id = db.Column(db.Integer, db.ForeignKey('students.id'), nullable=False)
     game_id = db.Column(db.Integer, db.ForeignKey('games.id'), nullable=True)
     puzzle_id = db.Column(db.Integer, db.ForeignKey('puzzle_games.id'), nullable=True)
+    quiz_id = db.Column(db.Integer, db.ForeignKey('quiz_games.id'), nullable=True)
     stars_earned = db.Column(db.Integer, default=1)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     game = db.relationship('Game')
     puzzle = db.relationship('PuzzleGame')
+    quiz = db.relationship('QuizGame')
 
 
-# НОВЫЕ МОДЕЛИ ДЛЯ ПАЗЛОВ
+# Модели для пазлов
 class PuzzleGame(db.Model):
     __tablename__ = 'puzzle_games'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
     word = db.Column(db.String(100), nullable=False)
-    hint = db.Column(db.Text, nullable=True)  # ЭТО ПОЛЕ ДЛЯ ПОДСКАЗКИ
+    hint = db.Column(db.Text, nullable=True)
     background = db.Column(db.String(50), default='nature')
     creator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -138,6 +141,31 @@ class PuzzleSession(db.Model):
     game = db.relationship('PuzzleGame')
 
 
+# Модели для викторины
+class QuizGame(db.Model):
+    __tablename__ = 'quiz_games'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    creator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
+
+    questions = db.relationship('QuizQuestion', backref='game', lazy=True, cascade='all, delete-orphan')
+
+
+class QuizQuestion(db.Model):
+    __tablename__ = 'quiz_questions'
+    id = db.Column(db.Integer, primary_key=True)
+    game_id = db.Column(db.Integer, db.ForeignKey('quiz_games.id'), nullable=False)
+    image_url = db.Column(db.String(500), nullable=False)
+    correct_answer = db.Column(db.String(10), nullable=False)
+    option_a = db.Column(db.String(200), nullable=False)
+    option_b = db.Column(db.String(200), nullable=False)
+    option_c = db.Column(db.String(200), nullable=False)
+    option_d = db.Column(db.String(200), nullable=False)
+    order_index = db.Column(db.Integer, default=0)
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -145,8 +173,8 @@ def load_user(user_id):
 
 # ==================== СОЗДАНИЕ БАЗЫ ДАННЫХ ====================
 with app.app_context():
-    # db.drop_all()  # ← ЗАКОММЕНТИРУЙТЕ ИЛИ УДАЛИТЕ ЭТУ СТРОЧКУ!
-    db.create_all()  # Создает таблицы только если их нет
+    # db.drop_all()  # Раскомментируйте ТОЛЬКО для полной очистки
+    db.create_all()
     print("✅ База данных готова к работе!")
 
 # ==================== ДАННЫЕ ДЛЯ МУЗЫКАЛЬНОЙ ИГРЫ ====================
@@ -274,7 +302,8 @@ def upload_image():
     return jsonify({'url': image_url})
 
 
-# СОЗДАНИЕ ИГРЫ-СОЕДИНЕНИЯ
+# ==================== ИГРЫ-СОЕДИНЕНИЯ ====================
+
 @app.route('/create_game', methods=['POST'])
 @login_required
 def create_game():
@@ -310,7 +339,6 @@ def create_game():
     return redirect(url_for('dashboard'))
 
 
-# УДАЛЕНИЕ ИГРЫ
 @app.route('/delete_game/<int:game_id>')
 @login_required
 def delete_game(game_id):
@@ -325,7 +353,6 @@ def delete_game(game_id):
     return redirect(url_for('dashboard'))
 
 
-# ИГРАТЬ В ИГРУ-СОЕДИНЕНИЕ
 @app.route('/play_game/<int:game_id>')
 @login_required
 def play_game(game_id):
@@ -341,7 +368,6 @@ def play_game(game_id):
                            shuffled_texts=texts)
 
 
-# ПРОВЕРКА ИГРЫ-СОЕДИНЕНИЯ
 @app.route('/check_game_result', methods=['POST'])
 @login_required
 def check_game_result():
@@ -377,7 +403,8 @@ def check_game_result():
     })
 
 
-# СОЗДАНИЕ ПАЗЛА
+# ==================== ПАЗЛЫ ====================
+
 @app.route('/create_puzzle', methods=['POST'])
 @login_required
 def create_puzzle():
@@ -387,14 +414,14 @@ def create_puzzle():
 
     name = request.form.get('name')
     word = request.form.get('word').upper().strip()
-    hint = request.form.get('hint', '').strip()  # ЭТА СТРОЧКА ДОЛЖНА БЫТЬ
+    hint = request.form.get('hint', '').strip()
     background = request.form.get('background')
 
     if not name or not word:
         flash('Заполните название игры и слово', 'error')
         return redirect(url_for('dashboard'))
 
-    if len(word) > 15:  # ДОЛЖНО БЫТЬ 15
+    if len(word) > 15:
         flash('Слово должно быть не длиннее 15 букв', 'error')
         return redirect(url_for('dashboard'))
 
@@ -412,7 +439,6 @@ def create_puzzle():
     return redirect(url_for('dashboard'))
 
 
-# УДАЛЕНИЕ ПАЗЛА
 @app.route('/delete_puzzle/<int:puzzle_id>')
 @login_required
 def delete_puzzle(puzzle_id):
@@ -427,13 +453,11 @@ def delete_puzzle(puzzle_id):
     return redirect(url_for('dashboard'))
 
 
-# ИГРАТЬ В ПАЗЛ
 @app.route('/play_puzzle/<int:puzzle_id>')
 @login_required
 def play_puzzle(puzzle_id):
     puzzle = PuzzleGame.query.get_or_404(puzzle_id)
 
-    # Разбиваем слово на буквы и перемешиваем
     letters_list = list(puzzle.word)
     random.shuffle(letters_list)
 
@@ -450,7 +474,6 @@ def play_puzzle(puzzle_id):
                            bg_style=bg_style)
 
 
-# ПРОВЕРКА ПАЗЛА
 @app.route('/check_puzzle', methods=['POST'])
 @login_required
 def check_puzzle():
@@ -494,7 +517,173 @@ def check_puzzle():
     })
 
 
-# СТРАНИЦА ВЫБОРА УЧЕНИКА ДЛЯ НАЧИСЛЕНИЯ ЗВЕЗДЫ ЗА ПАЗЛ
+# ==================== ВИКТОРИНЫ ====================
+
+@app.route('/create_quiz', methods=['POST'])
+@login_required
+def create_quiz():
+    if current_user.role != 'teacher':
+        flash('Доступ запрещен', 'error')
+        return redirect(url_for('dashboard'))
+
+    name = request.form.get('name')
+    questions_json = request.form.get('questions')
+
+    print("======= ДАННЫЕ ЗАПРОСА =======")
+    print(f"name: {name}")
+    print(f"questions: {questions_json}")
+    print("==============================")
+
+    if not questions_json:
+        flash('Ошибка: данные вопросов не получены. Пожалуйста, добавьте хотя бы один вопрос.', 'error')
+        return redirect(url_for('dashboard'))
+
+    try:
+        questions_data = json.loads(questions_json)
+    except json.JSONDecodeError as e:
+        flash(f'Ошибка формата данных: {str(e)}', 'error')
+        return redirect(url_for('dashboard'))
+
+    if not name or not questions_data:
+        flash('Заполните название викторины и добавьте вопросы', 'error')
+        return redirect(url_for('dashboard'))
+
+    new_quiz = QuizGame(
+        name=name,
+        creator_id=current_user.id
+    )
+    db.session.add(new_quiz)
+    db.session.commit()
+
+    for idx, q in enumerate(questions_data):
+        question = QuizQuestion(
+            game_id=new_quiz.id,
+            image_url=q['image_url'],
+            correct_answer=q['correct_answer'],
+            option_a=q['option_a'],
+            option_b=q['option_b'],
+            option_c=q['option_c'],
+            option_d=q['option_d'],
+            order_index=idx
+        )
+        db.session.add(question)
+
+    db.session.commit()
+    flash(f'Викторина "{name}" успешно создана!', 'success')
+    return redirect(url_for('dashboard'))
+
+
+@app.route('/delete_quiz/<int:quiz_id>')
+@login_required
+def delete_quiz(quiz_id):
+    quiz = QuizGame.query.get_or_404(quiz_id)
+    if quiz.creator_id != current_user.id:
+        flash('Доступ запрещен', 'error')
+        return redirect(url_for('dashboard'))
+
+    db.session.delete(quiz)
+    db.session.commit()
+    flash('Викторина удалена', 'success')
+    return redirect(url_for('dashboard'))
+
+
+@app.route('/play_quiz/<int:quiz_id>')
+@login_required
+def play_quiz(quiz_id):
+    quiz = QuizGame.query.get_or_404(quiz_id)
+    questions = []
+
+    for q in quiz.questions:
+        questions.append({
+            'id': q.id,
+            'image_url': q.image_url,
+            'option_a': q.option_a,
+            'option_b': q.option_b,
+            'option_c': q.option_c,
+            'option_d': q.option_d,
+            'correct_answer': q.correct_answer
+        })
+
+    return render_template('play_quiz.html',
+                           quiz=quiz,
+                           questions=questions)
+
+@app.route('/debug_quiz/<int:quiz_id>')
+@login_required
+def debug_quiz(quiz_id):
+    """Отладочный маршрут для проверки данных викторины"""
+    quiz = QuizGame.query.get_or_404(quiz_id)
+    result = {
+        'name': quiz.name,
+        'id': quiz.id,
+        'questions': []
+    }
+    for idx, q in enumerate(quiz.questions):
+        result['questions'].append({
+            'index': idx + 1,
+            'id': q.id,
+            'image_url': q.image_url,
+            'correct_answer': q.correct_answer,
+            'option_a': q.option_a,
+            'option_b': q.option_b,
+            'option_c': q.option_c,
+            'option_d': q.option_d
+        })
+    return jsonify(result)
+
+@app.route('/check_quiz_result', methods=['POST'])
+@login_required
+def check_quiz_result():
+    data = request.json
+    quiz_id = data.get('quiz_id')
+    answers = data.get('answers', {})
+
+    print("=" * 50)
+    print(f"Quiz ID: {quiz_id}")
+    print(f"Полученные ответы: {answers}")
+
+    quiz = QuizGame.query.get_or_404(quiz_id)
+
+    correct_count = 0
+    total = len(quiz.questions)
+
+    for idx, question in enumerate(quiz.questions):
+        user_answer = answers.get(str(idx))
+        correct_answer = question.correct_answer
+        print(f"Вопрос {idx + 1}: пользователь ответил '{user_answer}', правильный '{correct_answer}'")
+
+        if user_answer == correct_answer:
+            correct_count += 1
+            print(f"  ✅ ПРАВИЛЬНО!")
+        else:
+            print(f"  ❌ НЕПРАВИЛЬНО!")
+
+    score_percent = (correct_count / total) * 100 if total > 0 else 0
+    passed = score_percent >= 70
+
+    print(f"Итого: {correct_count} из {total} = {score_percent}%")
+    print(f"Пройдено: {passed}")
+    print("=" * 50)
+
+    if passed:
+        session['quiz_result'] = {
+            'game_id': quiz_id,
+            'game_name': quiz.name,
+            'correct': correct_count,
+            'total': total,
+            'score': score_percent,
+            'type': 'quiz'
+        }
+
+    return jsonify({
+        'correct': correct_count,
+        'total': total,
+        'score': score_percent,
+        'passed': passed
+    })
+
+# ==================== НАЧИСЛЕНИЕ ЗВЕЗД ====================
+
 @app.route('/select_student_for_puzzle')
 @login_required
 def select_student_for_puzzle():
@@ -514,7 +703,6 @@ def select_student_for_puzzle():
                            game_result=game_result)
 
 
-# НАЧИСЛИТЬ ЗВЕЗДУ ЗА ПАЗЛ
 @app.route('/award_puzzle_star', methods=['POST'])
 @login_required
 def award_puzzle_star():
@@ -551,7 +739,6 @@ def award_puzzle_star():
     return redirect(url_for('dashboard'))
 
 
-# СТРАНИЦА ВЫБОРА УЧЕНИКА ДЛЯ НАЧИСЛЕНИЯ ЗВЕЗДЫ (для игры-соединения)
 @app.route('/select_student_for_star')
 @login_required
 def select_student_for_star():
@@ -571,7 +758,6 @@ def select_student_for_star():
                            game_result=game_result)
 
 
-# НАЧИСЛИТЬ ЗВЕЗДУ ЗА ИГРУ-СОЕДИНЕНИЕ
 @app.route('/award_star', methods=['POST'])
 @login_required
 def award_star():
@@ -597,6 +783,7 @@ def award_star():
         student_id=student.id,
         game_id=game_result['game_id'],
         puzzle_id=None,
+        quiz_id=None,
         stars_earned=1
     )
     db.session.add(star_history)
@@ -608,7 +795,64 @@ def award_star():
     return redirect(url_for('dashboard'))
 
 
-# СТРАНИЦА УЧЕНИКА
+@app.route('/select_student_for_quiz')
+@login_required
+def select_student_for_quiz():
+    if current_user.role != 'teacher':
+        flash('Доступ запрещен', 'error')
+        return redirect(url_for('dashboard'))
+
+    game_result = session.get('quiz_result')
+    if not game_result:
+        flash('Сначала нужно пройти викторину', 'error')
+        return redirect(url_for('dashboard'))
+
+    students = Student.query.filter_by(teacher_id=current_user.id).all()
+
+    return render_template('select_student_for_quiz.html',
+                           students=students,
+                           game_result=game_result)
+
+
+@app.route('/award_quiz_star', methods=['POST'])
+@login_required
+def award_quiz_star():
+    if current_user.role != 'teacher':
+        flash('Доступ запрещен', 'error')
+        return redirect(url_for('dashboard'))
+
+    student_id = request.form.get('student_id')
+    game_result = session.get('quiz_result')
+
+    if not game_result:
+        flash('Сначала нужно пройти игру', 'error')
+        return redirect(url_for('dashboard'))
+
+    student = Student.query.get_or_404(student_id)
+    if student.teacher_id != current_user.id:
+        flash('Доступ запрещен', 'error')
+        return redirect(url_for('dashboard'))
+
+    student.stars = (student.stars or 0) + 1
+
+    star_history = StarHistory(
+        student_id=student.id,
+        game_id=None,
+        puzzle_id=None,
+        quiz_id=game_result['game_id'],
+        stars_earned=1
+    )
+    db.session.add(star_history)
+    db.session.commit()
+
+    session.pop('quiz_result', None)
+
+    flash(f'⭐ Звезда начислена ученику {student.name} за викторину "{game_result["game_name"]}"!', 'success')
+    return redirect(url_for('dashboard'))
+
+
+# ==================== УПРАВЛЕНИЕ УЧЕНИКАМИ ====================
+
 @app.route('/student/<int:student_id>')
 @login_required
 def view_student(student_id):
@@ -638,7 +882,6 @@ def view_student(student_id):
                            star_history=star_history)
 
 
-# ДОБАВЛЕНИЕ УЧЕНИКА
 @app.route('/add_student', methods=['POST'])
 @login_required
 def add_student():
@@ -674,7 +917,6 @@ def add_student():
     return redirect(url_for('dashboard'))
 
 
-# РЕДАКТИРОВАНИЕ УЧЕНИКА
 @app.route('/edit_student/<int:student_id>', methods=['POST'])
 @login_required
 def edit_student(student_id):
@@ -700,7 +942,6 @@ def edit_student(student_id):
     return redirect(url_for('view_student', student_id=student_id))
 
 
-# УДАЛЕНИЕ УЧЕНИКА
 @app.route('/delete_student/<int:student_id>')
 @login_required
 def delete_student(student_id):
@@ -720,7 +961,8 @@ def delete_student(student_id):
     return redirect(url_for('dashboard'))
 
 
-# МУЗЫКАЛЬНАЯ ШКОЛА
+# ==================== ДОПОЛНИТЕЛЬНЫЕ МАРШРУТЫ ====================
+
 @app.route('/music_school')
 @login_required
 def music_school():

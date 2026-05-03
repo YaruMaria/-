@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <div>
-    <h1>👨‍🏫 Добро пожаложаловать, {{ user.full_name }}!</h1>
+    <h1>👨‍🏫 Добро пожаловать, {{ user.full_name }}!</h1>
 
     <!-- Вкладки -->
     <div style="margin-bottom: 2rem; display: flex; flex-wrap: wrap; gap: 10px;">
@@ -10,6 +10,8 @@
         <button onclick="showTab('createGame')" id="tabCreate" class="tab-btn">✨ Создать игру-соединение</button>
         <button onclick="showTab('puzzles')" id="tabPuzzles" class="tab-btn">🧩 Мои пазлы</button>
         <button onclick="showTab('createPuzzle')" id="tabCreatePuzzle" class="tab-btn">✨ Создать пазл</button>
+        <button onclick="showTab('quiz')" id="tabQuiz" class="tab-btn">❓ Мои викторины</button>
+        <button onclick="showTab('createQuiz')" id="tabCreateQuiz" class="tab-btn">✨ Создать викторину</button>
     </div>
 
     <!-- ==================== ВКЛАДКА: МОИ УЧЕНИКИ ==================== -->
@@ -160,6 +162,9 @@
                         <div>
                             <strong>{{ puzzle.name }}</strong>
                             <span style="margin-left: 10px; color: #666;">📝 Слово: {{ puzzle.word }}</span>
+                            {% if puzzle.hint %}
+                            <span style="margin-left: 10px; color: #0066cc;">💡 Есть подсказка</span>
+                            {% endif %}
                             <span style="font-size: 0.8rem; color: #888; margin-left: 10px;">
                                 📅 {{ puzzle.created_at.strftime('%d.%m.%Y') }}
                             </span>
@@ -177,7 +182,7 @@
         </div>
     </div>
 
-        <!-- ==================== ВКЛАДКА: СОЗДАТЬ ПАЗЛ ==================== -->
+    <!-- ==================== ВКЛАДКА: СОЗДАТЬ ПАЗЛ ==================== -->
     <div id="createPuzzleTab" class="tab-content" style="display: none;">
         <div class="card">
             <h2>✨ Создать новый пазл (собери слово)</h2>
@@ -194,10 +199,9 @@
                     <input type="text" name="word" required maxlength="15"
                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; text-transform: uppercase;"
                            placeholder="Например: КОШКА">
-                    <small style="color: #666;">Слово будет разбито на буквы, ученик должен собрать его в правильном порядке</small>
+                    <small style="color: #666;">Слово будет разбито на буквы для сборки</small>
                 </div>
 
-                <!-- ПОЛЕ ДЛЯ ПОДСКАЗКИ - ДОБАВЛЯЕМ! -->
                 <div style="margin-bottom: 1rem;">
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">💡 Подсказка (наводящий вопрос)</label>
                     <textarea name="hint" rows="3" placeholder="Например: Это животное, которое любит молоко и умеет мяукать"
@@ -230,6 +234,58 @@
                 </div>
 
                 <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #ffd700, #ff8c00); color: #000; font-weight: bold;">🧩 СОЗДАТЬ ПАЗЛ</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== ВКЛАДКА: МОИ ВИКТОРИНЫ ==================== -->
+    <div id="quizTab" class="tab-content" style="display: none;">
+        <div class="card">
+            <h2>❓ Мои викторины</h2>
+            {% if user.quiz_games %}
+                <div style="display: grid; gap: 1rem;">
+                    {% for quiz in user.quiz_games %}
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #f7fafc; border-radius: 12px;">
+                        <div>
+                            <strong>{{ quiz.name }}</strong>
+                            <span style="font-size: 0.8rem; color: #888; margin-left: 10px;">
+                                📅 {{ quiz.created_at.strftime('%d.%m.%Y') }}
+                            </span>
+                            <span style="font-size: 0.8rem; color: #888; margin-left: 5px;">
+                                📝 {{ quiz.questions|length }} вопросов
+                            </span>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('play_quiz', quiz_id=quiz.id) }}" class="btn btn-primary" style="padding: 5px 15px; margin-right: 10px;" target="_blank">❓ Играть</a>
+                            <a href="{{ url_for('delete_quiz', quiz_id=quiz.id) }}" class="btn btn-danger" style="padding: 5px 15px;" onclick="return confirm('Удалить викторину?')">🗑 Удалить</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p>У вас пока нет созданных викторин. Создайте первую викторину во вкладке "Создать викторину"!</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ==================== ВКЛАДКА: СОЗДАТЬ ВИКТОРИНУ ==================== -->
+    <div id="createQuizTab" class="tab-content" style="display: none;">
+        <div class="card">
+            <h2>✨ Создать викторину</h2>
+            <form id="createQuizForm" method="post" action="{{ url_for('create_quiz') }}">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">🏷️ Название викторины *</label>
+                    <input type="text" name="name" id="quizName" required
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;"
+                           placeholder="Например: Угадай ноту">
+                </div>
+
+                <div id="quizQuestionsList"></div>
+
+                <button type="button" onclick="addQuizQuestion()" class="btn btn-primary" style="margin-top: 1rem;">➕ Добавить вопрос</button>
+
+                <input type="hidden" name="questions" id="quizQuestionsData">
+                <button type="submit" class="btn btn-primary" style="margin-top: 2rem; width: 100%;">💾 Сохранить викторину</button>
             </form>
         </div>
     </div>
@@ -276,17 +332,17 @@
         border-radius: 8px;
         border: 1px solid #ddd;
     }
-    .form-input {
+    .option-input {
         width: 100%;
-        padding: 10px;
+        padding: 8px;
         border: 1px solid #ddd;
-        border-radius: 8px;
+        border-radius: 6px;
+        margin-bottom: 8px;
     }
 </style>
 
 <script>
-    let questionCounter = 0;
-
+    // ==================== ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ====================
     function showTab(tabName) {
         // Скрываем все вкладки
         document.getElementById('studentsTab').style.display = 'none';
@@ -294,9 +350,11 @@
         document.getElementById('createGameTab').style.display = 'none';
         document.getElementById('puzzlesTab').style.display = 'none';
         document.getElementById('createPuzzleTab').style.display = 'none';
+        document.getElementById('quizTab').style.display = 'none';
+        document.getElementById('createQuizTab').style.display = 'none';
 
         // Убираем активный класс у всех кнопок
-        const buttons = ['tabStudents', 'tabGames', 'tabCreate', 'tabPuzzles', 'tabCreatePuzzle'];
+        const buttons = ['tabStudents', 'tabGames', 'tabCreate', 'tabPuzzles', 'tabCreatePuzzle', 'tabQuiz', 'tabCreateQuiz'];
         buttons.forEach(btn => {
             const el = document.getElementById(btn);
             if (el) el.classList.remove('active');
@@ -318,10 +376,18 @@
         } else if (tabName === 'createPuzzle') {
             document.getElementById('createPuzzleTab').style.display = 'block';
             document.getElementById('tabCreatePuzzle').classList.add('active');
+        } else if (tabName === 'quiz') {
+            document.getElementById('quizTab').style.display = 'block';
+            document.getElementById('tabQuiz').classList.add('active');
+        } else if (tabName === 'createQuiz') {
+            document.getElementById('createQuizTab').style.display = 'block';
+            document.getElementById('tabCreateQuiz').classList.add('active');
         }
     }
 
-    // Функции для создания игры-соединения
+    // ==================== ИГРА-СОЕДИНЕНИЕ ====================
+    let questionCounter = 0;
+
     function addQuestion() {
         const id = questionCounter++;
         const container = document.getElementById('questionList');
@@ -389,7 +455,7 @@
         }
 
         const questions = [];
-        const questionItems = document.querySelectorAll('.question-item');
+        const questionItems = document.querySelectorAll('#questionList .question-item');
 
         for (let i = 0; i < questionItems.length; i++) {
             const item = questionItems[i];
@@ -419,9 +485,143 @@
         return true;
     };
 
-    // Добавляем первый вопрос автоматически при загрузке страницы
+    // ==================== ВИКТОРИНА ====================
+    let quizQuestionCounter = 0;
+
+    function addQuizQuestion() {
+        const id = quizQuestionCounter++;
+        const container = document.getElementById('quizQuestionsList');
+        const div = document.createElement('div');
+        div.className = 'question-item';
+        div.id = `quiz_q_${id}`;
+        div.innerHTML = `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; background: #f0f0f0; padding: 10px;">
+                <strong>❓ Вопрос ${id + 1}</strong>
+                <button type="button" onclick="removeQuizQuestion(${id})" style="background: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">🗑 Удалить</button>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                    <label>📸 Картинка</label>
+                    <input type="file" class="quiz-image-${id}" accept="image/*" onchange="uploadQuizImage(${id}, this)">
+                    <div id="quizPreview_${id}" style="margin-top: 10px;"></div>
+                    <input type="hidden" id="quizImageUrl_${id}" value="">
+                </div>
+                <div>
+                    <label>Вариант А:</label>
+                    <input type="text" id="quizOptA_${id}" class="option-input" placeholder="Вариант А" style="width: 100%; margin-bottom: 5px;">
+                    <label>Вариант Б:</label>
+                    <input type="text" id="quizOptB_${id}" class="option-input" placeholder="Вариант Б" style="width: 100%; margin-bottom: 5px;">
+                    <label>Вариант В:</label>
+                    <input type="text" id="quizOptC_${id}" class="option-input" placeholder="Вариант В" style="width: 100%; margin-bottom: 5px;">
+                    <label>Вариант Г:</label>
+                    <input type="text" id="quizOptD_${id}" class="option-input" placeholder="Вариант Г" style="width: 100%; margin-bottom: 5px;">
+                    <label>✅ Правильный ответ:</label>
+                    <select id="quizCorrect_${id}" style="width: 100px; padding: 8px;">
+                        <option value="A">А</option>
+                        <option value="Б">Б</option>
+                        <option value="В">В</option>
+                        <option value="Г">Г</option>
+                    </select>
+                </div>
+            </div>
+            <hr style="margin: 15px 0;">
+        `;
+        container.appendChild(div);
+    }
+
+    function removeQuizQuestion(id) {
+        const div = document.getElementById(`quiz_q_${id}`);
+        if (div) div.remove();
+    }
+
+    async function uploadQuizImage(questionId, input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        try {
+            const response = await fetch('/upload_image', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            if (data.url) {
+                document.getElementById(`quizImageUrl_${questionId}`).value = data.url;
+                document.getElementById(`quizPreview_${questionId}`).innerHTML = `<img src="${data.url}" style="max-width: 150px; border-radius: 8px;"><br><small>✓ Загружено</small>`;
+            }
+        } catch (error) {
+            alert('Ошибка при загрузке');
+        }
+    }
+
+    // Обработчик отправки формы викторины
+    if (document.getElementById('createQuizForm')) {
+        document.getElementById('createQuizForm').onsubmit = function(e) {
+            const quizName = document.getElementById('quizName').value;
+            if (!quizName) {
+                alert('Введите название викторины');
+                e.preventDefault();
+                return false;
+            }
+
+            const questions = [];
+            const questionDivs = document.querySelectorAll('#quizQuestionsList .question-item');
+
+            for (let i = 0; i < questionDivs.length; i++) {
+                const div = questionDivs[i];
+                const id = div.id.split('_')[2];
+
+                const imageUrl = document.getElementById(`quizImageUrl_${id}`).value;
+                const optA = document.getElementById(`quizOptA_${id}`).value;
+                const optB = document.getElementById(`quizOptB_${id}`).value;
+                const optC = document.getElementById(`quizOptC_${id}`).value;
+                const optD = document.getElementById(`quizOptD_${id}`).value;
+                const correct = document.getElementById(`quizCorrect_${id}`).value;
+
+                if (!imageUrl) {
+                    alert(`Загрузите картинку для вопроса ${i + 1}`);
+                    e.preventDefault();
+                    return false;
+                }
+
+                if (!optA || !optB || !optC || !optD) {
+                    alert(`Заполните все варианты ответов в вопросе ${i + 1}`);
+                    e.preventDefault();
+                    return false;
+                }
+
+                questions.push({
+                    image_url: imageUrl,
+                    option_a: optA,
+                    option_b: optB,
+                    option_c: optC,
+                    option_d: optD,
+                    correct_answer: correct
+                });
+            }
+
+            if (questions.length === 0) {
+                alert('Добавьте хотя бы один вопрос');
+                e.preventDefault();
+                return false;
+            }
+
+            document.getElementById('quizQuestionsData').value = JSON.stringify(questions);
+            console.log('Отправка:', JSON.stringify(questions));
+            return true;
+        };
+    }
+
+    // Добавляем первый вопрос для игры-соединения
     if (document.getElementById('questionList')) {
         addQuestion();
+    }
+
+    // Добавляем первый вопрос для викторины
+    if (document.getElementById('quizQuestionsList')) {
+        addQuizQuestion();
     }
 </script>
 {% endblock %}

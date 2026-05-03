@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+    <div class="card">
+        <h1 style="text-align: center;">❓ Создать викторину</h1>
+        <p style="text-align: center; color: #666;">Загрузите картинку и добавьте 4 варианта ответа</p>
+
+        <form id="createQuizForm" method="post" action="{{ url_for('create_quiz') }}">
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">🏷️ Название викторины *</label>
+                <input type="text" name="name" id="quizName" required
+                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;"
+                       placeholder="Например: Угадай ноту">
+            </div>
+            
+            <div id="questionsContainer">
+                <h3>📋 Вопросы</h3>
+                <div id="questionsList"></div>
+                <button type="button" onclick="addNewQuestion()" class="btn btn-primary" style="margin-top: 1rem;">➕ Добавить вопрос</button>
+            </div>
+
+            <input type="hidden" name="questions" id="questionsData">
+            <button type="submit" class="btn btn-primary" style="margin-top: 2rem; width: 100%;">💾 Сохранить викторину</button>
+        </form>
+    </div>
+</div>
+
+<style>
+    .question-block {
+        background: #f7fafc;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    }
+    .image-preview {
+        max-width: 150px;
+        margin-top: 10px;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+    }
+    .option-input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        margin-bottom: 8px;
+    }
+</style>
+
+<script>
+    let questionIdCounter = 0;
+
+    function addNewQuestion() {
+        const id = questionIdCounter++;
+        const container = document.getElementById('questionsList');
+        const div = document.createElement('div');
+        div.className = 'question-block';
+        div.setAttribute('data-id', id);
+        div.innerHTML = `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <strong>Вопрос ${id + 1}</strong>
+                <button type="button" onclick="removeQuestion(${id})" style="background: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">🗑 Удалить</button>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                    <label>📸 Картинка</label>
+                    <div style="margin-bottom: 10px;">
+                        <input type="file" class="image-upload" data-id="${id}" accept="image/*" style="margin-bottom: 10px;">
+                        <small style="color: #666;">Выберите картинку с компьютера</small>
+                    </div>
+                    <div class="image-preview-container" data-id="${id}"></div>
+                    <input type="hidden" class="image-url" data-id="${id}" value="">
+                </div>
+                <div>
+                    <label>📝 Варианты ответов</label>
+                    <input type="text" class="option-a" data-id="${id}" class="option-input" placeholder="Вариант А">
+                    <input type="text" class="option-b" data-id="${id}" class="option-input" placeholder="Вариант Б">
+                    <input type="text" class="option-c" data-id="${id}" class="option-input" placeholder="Вариант В">
+                    <input type="text" class="option-d" data-id="${id}" class="option-input" placeholder="Вариант Г">
+                    <div style="margin-top: 10px;">
+                        <label>✅ Правильный ответ</label>
+                        <select class="correct-answer" data-id="${id}" style="width: 100px; padding: 8px; border-radius: 6px;">
+                            <option value="A">А</option>
+                            <option value="Б">Б</option>
+                            <option value="В">В</option>
+                            <option value="Г">Г</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.appendChild(div);
+
+        // Назначаем обработчик загрузки файла
+        const fileInput = div.querySelector('.image-upload');
+        fileInput.addEventListener('change', function(e) {
+            uploadImageForQuestion(id, this);
+        });
+    }
+
+    function removeQuestion(id) {
+        const block = document.querySelector(`.question-block[data-id="${id}"]`);
+        if (block) block.remove();
+    }
+
+    async function uploadImageForQuestion(questionId, input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        try {
+            const response = await fetch('/upload_image', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            if (data.url) {
+                // Сохраняем URL в скрытое поле
+                const hiddenInput = document.querySelector(`.image-url[data-id="${questionId}"]`);
+                hiddenInput.value = data.url;
+
+                // Показываем превью
+                const previewContainer = document.querySelector(`.image-preview-container[data-id="${questionId}"]`);
+                previewContainer.innerHTML = `<img src="${data.url}" class="image-preview"><br><small style="color: green;">✓ Картинка загружена</small>`;
+            }
+        } catch (error) {
+            alert('Ошибка при загрузке картинки');
+        }
+    }
+
+    document.getElementById('createQuizForm').onsubmit = function(e) {
+        const quizName = document.getElementById('quizName').value;
+        if (!quizName) {
+            alert('Введите название викторины');
+            e.preventDefault();
+            return false;
+        }
+
+        const questionBlocks = document.querySelectorAll('.question-block');
+        const questions = [];
+
+        for (let i = 0; i < questionBlocks.length; i++) {
+            const block = questionBlocks[i];
+            const id = block.getAttribute('data-id');
+
+            const imageUrl = document.querySelector(`.image-url[data-id="${id}"]`).value;
+            const optionA = document.querySelector(`.option-a[data-id="${id}"]`).value;
+            const optionB = document.querySelector(`.option-b[data-id="${id}"]`).value;
+            const optionC = document.querySelector(`.option-c[data-id="${id}"]`).value;
+            const optionD = document.querySelector(`.option-d[data-id="${id}"]`).value;
+            const correctAnswer = document.querySelector(`.correct-answer[data-id="${id}"]`).value;
+
+            if (!imageUrl) {
+                alert(`Загрузите картинку в вопросе ${i + 1}`);
+                e.preventDefault();
+                return false;
+            }
+
+            if (!optionA || !optionB || !optionC || !optionD) {
+                alert(`Заполните все варианты ответов в вопросе ${i + 1}`);
+                e.preventDefault();
+                return false;
+            }
+
+            questions.push({
+                image_url: imageUrl,
+                option_a: optionA,
+                option_b: optionB,
+                option_c: optionC,
+                option_d: optionD,
+                correct_answer: correctAnswer
+            });
+        }
+
+        if (questions.length === 0) {
+            alert('Добавьте хотя бы один вопрос');
+            e.preventDefault();
+            return false;
+        }
+
+        // Сохраняем данные в скрытое поле
+        document.getElementById('questionsData').value = JSON.stringify(questions);
+        console.log('Отправляем вопросы:', JSON.stringify(questions));
+        return true;
+    };
+
+    // Добавляем первый вопрос автоматически при загрузке
+    addNewQuestion();
+</script>
+{% endblock %}
