@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+{% block content %}
+
+{# Определяем стили для разных фонов #}
+{% if puzzle.background == 'space' %}
+    {% set bg_style = 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)' %}
+    {% set card_bg = 'rgba(0,0,0,0.85)' %}
+    {% set accent_color = '#ffd700' %}
+    {% set text_color = '#ffd700' %}
+    {% set slot_bg = 'rgba(30,20,50,0.8)' %}
+    {% set source_bg = 'radial-gradient(circle at 30% 20%, rgba(80,60,120,0.9), rgba(40,30,70,0.95))' %}
+{% elif puzzle.background == 'ocean' %}
+    {% set bg_style = 'linear-gradient(135deg, #003973 0%, #00b4db 50%, #006994 100%)' %}
+    {% set card_bg = 'rgba(255,255,255,0.92)' %}
+    {% set accent_color = '#006994' %}
+    {% set text_color = '#003973' %}
+    {% set slot_bg = 'rgba(200,230,255,0.85)' %}
+    {% set source_bg = 'linear-gradient(135deg, #00b4db, #0083b0)' %}
+{% else %}
+    {% set bg_style = 'linear-gradient(135deg, #11998e 0%, #38ef7d 40%, #ffd89b 100%)' %}
+    {% set card_bg = 'rgba(255,255,255,0.94)' %}
+    {% set accent_color = '#11998e' %}
+    {% set text_color = '#0a5c4a' %}
+    {% set slot_bg = 'rgba(240,255,240,0.9)' %}
+    {% set source_bg = 'linear-gradient(135deg, #11998e, #2ecc71)' %}
+{% endif %}
+
+<div style="min-height: 100vh; background: {{ bg_style }}; padding: 2rem; position: relative; overflow-x: hidden;">
+
+    <div style="max-width: 800px; margin: 0 auto; position: relative; z-index: 1;">
+        <div class="card" style="background: {{ card_bg }}; backdrop-filter: blur(10px); border: 2px solid {{ accent_color }}; border-radius: 24px;">
+            <div style="padding: 2rem;">
+                <h1 style="color: {{ accent_color }}; text-align: center;">🧩 {{ puzzle.name }}</h1>
+
+                <!-- Подсказка -->
+                {% if puzzle.hint %}
+                <div style="background: rgba(0,0,0,0.3); border-radius: 12px; padding: 12px; margin: 15px 0; text-align: center;">
+                    <span style="color: {{ accent_color }};">💡 Подсказка:</span>
+                    <span style="color: white;">{{ puzzle.hint }}</span>
+                </div>
+                {% endif %}
+
+                <p style="color: {{ text_color }}; text-align: center;">Соберите слово, перетаскивая буквы в правильные ячейки</p>
+
+                <div style="text-align: center; margin: 1rem 0; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 10px;">
+                    <small style="color: {{ text_color }};">📝 В слове {{ puzzle.word|length }} букв. Ячейки заполняются слева направо, ряд за рядом!</small>
+                </div>
+
+                <div id="gameArea">
+                    <!-- Целевые ячейки -->
+                    <div style="margin-bottom: 2rem;">
+                        <h3 style="color: {{ accent_color }};">✨ Собери слово здесь:</h3>
+                        <div id="targetGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 20px; border-radius: 20px;">
+                            {% for i in range(15) %}
+                            <div class="target-cell" data-position="{{ i }}" data-filled="false"
+                                 style="background: {{ slot_bg }};
+                                        border: 2px dashed #aaa;
+                                        border-radius: 16px;
+                                        min-height: 90px;
+                                        display: flex;
+                                        flex-direction: column;
+                                        align-items: center;
+                                        justify-content: center;
+                                        transition: all 0.3s;">
+                                <div class="target-letter" style="font-size: 32px; font-weight: bold; color: {{ accent_color }};"></div>
+                                <div style="font-size: 12px; color: #aaa; margin-top: 5px;">
+                                    {% if i < puzzle.word|length %}
+                                        {{ i+1 }}
+                                    {% else %}
+                                        ✔️
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Исходные буквы -->
+                    <div>
+                        <h3 style="color: {{ accent_color }};">🔤 Перетащите буквы:</h3>
+                        <div id="sourceGrid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; padding: 20px; border-radius: 20px;">
+                            {% for letter in letters %}
+                            <div class="source-cell" data-letter="{{ letter }}" draggable="true"
+                                 style="background: {{ source_bg }};
+                                        border: 2px solid {{ accent_color }};
+                                        border-radius: 16px;
+                                        min-height: 90px;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        font-size: 42px;
+                                        font-weight: bold;
+                                        color: white;
+                                        cursor: grab;
+                                        transition: all 0.3s;
+                                        box-shadow: 0 8px 20px rgba(0,0,0,0.2);">
+                                    {{ letter }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div id="resultArea" style="display: none; text-align: center; margin-top: 2rem;">
+                    <div id="resultMessage"></div>
+                </div>
+
+                <div id="correctAnswerArea" style="display: none; text-align: center; margin-top: 2rem;">
+                    <div style="background: rgba(0,0,0,0.5); border-radius: 16px; padding: 1rem;">
+                        <h3 style="color: {{ accent_color }};">✅ Правильный ответ:</h3>
+                        <div id="correctAnswerDisplay" style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 1rem 0;"></div>
+                        <button onclick="location.reload()" class="btn" style="background: {{ accent_color }}; color: white; border: none; padding: 10px 25px; border-radius: 40px; cursor: pointer;">🔄 Попробовать снова</button>
+                        <a href="{{ url_for('dashboard') }}" class="btn" style="background: #666; color: white; border: none; padding: 10px 25px; border-radius: 40px; cursor: pointer; text-decoration: none; display: inline-block; margin-left: 10px;">🏠 На главную</a>
+                    </div>
+                </div>
+
+                <div style="margin-top: 2rem; text-align: center; display: flex; gap: 1rem; justify-content: center;">
+                    <button id="checkBtn" class="btn" style="background: {{ accent_color }}; color: white; padding: 12px 30px; font-size: 18px; border: none; font-weight: bold; cursor: pointer; border-radius: 40px;">✅ Проверить</button>
+                    <button id="resetBtn" class="btn" style="background: rgba(0,0,0,0.4); color: white; padding: 12px 30px; border: none; cursor: pointer; border-radius: 40px;">🔄 Сбросить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .source-cell.dragging { opacity: 0.5; transform: scale(0.95); }
+    .target-cell.drag-over { transform: scale(1.05); border: 2px solid {{ accent_color }} !important; background: rgba(255,215,0,0.2) !important; }
+    .source-cell.disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(0.5); transform: scale(0.9); }
+    .target-cell.filled { border: 2px solid {{ accent_color }} !important; background: rgba(0,0,0,0.3) !important; }
+    .source-cell:hover:not(.disabled) { transform: scale(1.05); box-shadow: 0 0 25px {{ accent_color }}; }
+    .correct-letter { display: inline-block; background: {{ source_bg }}; border: 2px solid {{ accent_color }}; border-radius: 16px; min-width: 60px; height: 70px; display: inline-flex; align-items: center; justify-content: center; font-size: 36px; font-weight: bold; color: white; margin: 0 5px; }
+</style>
+
+<script>
+    let matches = {};
+    let availableLetters = [];
+    const wordLength = {{ puzzle.word|length }};
+
+    // Сохраняем доступные буквы
+    document.querySelectorAll('.source-cell[data-letter]').forEach(cell => {
+        const letter = cell.dataset.letter;
+        availableLetters.push({letter: letter, element: cell, used: false});
+    });
+
+    // Целевые ячейки (только нужные)
+    const targetCells = [];
+    const allTargetCells = document.querySelectorAll('.target-cell');
+
+    for (let i = 0; i < allTargetCells.length; i++) {
+        if (i < wordLength) {
+            targetCells.push(allTargetCells[i]);
+        }
+    }
+
+    function findAvailableLetter(letter) {
+        for (let i = 0; i < availableLetters.length; i++) {
+            if (!availableLetters[i].used && availableLetters[i].letter === letter) {
+                return availableLetters[i];
+            }
+        }
+        return null;
+    }
+
+    // Настройка перетаскивания для исходных ячеек
+    document.querySelectorAll('.source-cell[data-letter]').forEach(cell => {
+        cell.addEventListener('dragstart', function(e) {
+            if (this.classList.contains('disabled')) {
+                e.preventDefault();
+                return false;
+            }
+            e.dataTransfer.setData('text/plain', this.dataset.letter);
+            e.dataTransfer.effectAllowed = 'move';
+            this.classList.add('dragging');
+        });
+
+        cell.addEventListener('dragend', function(e) {
+            this.classList.remove('dragging');
+        });
+    });
+
+    // Целевые ячейки
+    targetCells.forEach(cell => {
+        cell.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (this.getAttribute('data-filled') === 'false') {
+                this.classList.add('drag-over');
+            }
+        });
+
+        cell.addEventListener('dragleave', function(e) {
+            this.classList.remove('drag-over');
+        });
+
+        cell.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+
+            if (this.getAttribute('data-filled') === 'true') {
+                alert('Эта ячейка уже заполнена!');
+                return;
+            }
+
+            const letter = e.dataTransfer.getData('text/plain');
+            const letterObj = findAvailableLetter(letter);
+
+            if (!letterObj || letterObj.used) {
+                alert('Эта буква уже использована!');
+                return;
+            }
+
+            const position = parseInt(this.dataset.position);
+
+            // Используем букву
+            letterObj.used = true;
+            letterObj.element.classList.add('disabled');
+            letterObj.element.setAttribute('draggable', 'false');
+
+            // Заполняем ячейку
+            matches[position] = letter;
+            this.setAttribute('data-filled', 'true');
+            this.querySelector('.target-letter').innerHTML = letter;
+            this.classList.add('filled');
+        });
+    });
+
+    document.getElementById('resetBtn').onclick = () => {
+        location.reload();
+    };
+
+    document.getElementById('checkBtn').onclick = async () => {
+        const matchedCount = Object.keys(matches).length;
+
+        if (matchedCount < wordLength) {
+            alert(`Соберите все буквы! Осталось ${wordLength - matchedCount} букв`);
+            return;
+        }
+
+        const response = await fetch('/check_puzzle', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                puzzle_id: {{ puzzle.id }},
+                matches: matches
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.passed) {
+            document.getElementById('gameArea').style.display = 'none';
+            document.getElementById('resultArea').style.display = 'block';
+            document.getElementById('checkBtn').style.display = 'none';
+            document.getElementById('resetBtn').style.display = 'none';
+
+            document.getElementById('resultMessage').innerHTML = `
+                <div style="background: linear-gradient(135deg, rgba(0,255,0,0.2), rgba(0,100,0,0.3)); padding: 1.5rem; border-radius: 20px; border: 2px solid #00ff00;">
+                    <h2 style="color: #00ff00;">🎉 ПОЗДРАВЛЯЮ! 🎉</h2>
+                    <p style="font-size: 24px; color: {{ accent_color }};">Вы правильно собрали слово!</p>
+                    <p>⭐ Вы заработали звезду!</p>
+                    <p style="margin-top: 15px;">Сейчас вы будете перенаправлены к выбору ученика...</p>
+                </div>
+            `;
+
+            setTimeout(() => {
+                window.location.href = '/select_student_for_puzzle';
+            }, 2000);
+
+        } else {
+            document.getElementById('gameArea').style.display = 'none';
+            document.getElementById('checkBtn').style.display = 'none';
+            document.getElementById('resetBtn').style.display = 'none';
+            document.getElementById('correctAnswerArea').style.display = 'block';
+
+            const correctWord = result.correct_word;
+            const displayDiv = document.getElementById('correctAnswerDisplay');
+            displayDiv.innerHTML = '';
+
+            for (let i = 0; i < correctWord.length; i++) {
+                displayDiv.innerHTML += `<div class="correct-letter">${correctWord[i]}</div>`;
+            }
+
+            displayDiv.innerHTML += `<div style="width: 100%; margin-top: 20px; color: white;">Вы собрали: <strong>${result.user_word}</strong></div>`;
+        }
+    };
+</script>
+{% endblock %}

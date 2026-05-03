@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width: 600px; margin: 0 auto;">
+    <div class="card" style="text-align: center;">
+        <h1>⭐ Начисление звезды за пазл</h1>
+        
+        <div style="background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,140,0,0.1)); padding: 1.5rem; border-radius: 16px; margin: 1.5rem 0;">
+            <p style="font-size: 1.2rem;">Пазл: <strong>{{ game_result.game_name }}</strong></p>
+            <p>Результат: {{ game_result.correct }} из {{ game_result.total }} букв правильно</p>
+            <p style="font-size: 2rem;">🧩 Поздравляем! 🧩</p>
+        </div>
+
+        <h2>👨‍🎓 Выберите ученика для начисления звезды</h2>
+
+        {% if students %}
+            <div style="display: flex; flex-direction: column; gap: 0.8rem; margin: 1.5rem 0;">
+                {% for student in students %}
+                <form method="post" action="{{ url_for('award_puzzle_star') }}" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #f7fafc; border-radius: 12px;">
+                    <div style="font-size: 1.1rem;">
+                        <strong>{{ student.name }}</strong>
+                        {% if student.subject %}
+                        <span style="color: #666; margin-left: 10px;">📚 {{ student.subject }}</span>
+                        {% endif %}
+                        <span style="color: gold; margin-left: 10px;">⭐ {{ student.stars or 0 }}</span>
+                    </div>
+                    <input type="hidden" name="student_id" value="{{ student.id }}">
+                    <button type="submit" class="btn btn-primary" style="padding: 8px 20px; background: linear-gradient(135deg, #ffd700, #ff8c00); color: #000; border: none; border-radius: 8px; cursor: pointer;">⭐ Начислить</button>
+                </form>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p style="color: #666;">У вас пока нет учеников. Добавьте ученика, чтобы начислить ему звезду!</p>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary">➕ Добавить ученика</a>
+        {% endif %}
+
+        <div style="margin-top: 1.5rem;">
+            <a href="{{ url_for('dashboard') }}" class="btn" style="background: #666; color: white; padding: 10px 25px; border-radius: 8px; text-decoration: none;">🏠 На главную</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

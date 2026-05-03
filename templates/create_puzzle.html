@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width: 600px; margin: 0 auto;">
+    <div class="card">
+        <h1 style="text-align: center;">🧩 Создать новый пазл</h1>
+
+        <form method="post">
+            <!-- Название -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">🏷️ Название пазла *</label>
+                <input type="text" name="name" required placeholder="Например: Угадай слово"
+                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+            </div>
+
+            <!-- Слово -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">📝 Загаданное слово (до 15 букв) *</label>
+                <input type="text" name="word" required placeholder="Например: КОШКА" maxlength="15"
+                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; text-transform: uppercase;">
+                <small style="color: #666;">Слово будет разбито на буквы для сборки</small>
+            </div>
+
+            <!-- ПОДСКАЗКА - ВОТ ОНА! -->
+            <div style="margin-bottom: 1.5rem; background: #f0f7ff; padding: 15px; border-radius: 12px;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold; color: #0066cc;">💡 ПОДСКАЗКА (наводящий вопрос)</label>
+                <textarea name="hint" rows="3" placeholder="Напишите здесь подсказку для учеников. Например: Это домашнее животное, которое любит молоко и умеет мяукать"
+                          style="width: 100%; padding: 10px; border: 2px solid #0066cc; border-radius: 8px; font-size: 14px;"></textarea>
+                <small style="color: #0066cc;">⭐ Подсказка появится в начале игры и поможет ученику отгадать слово</small>
+            </div>
+
+            <!-- Фон -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">🎨 Выберите фон</label>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <label style="flex: 1; text-align: center; cursor: pointer;">
+                        <input type="radio" name="background" value="nature" checked>
+                        <div style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 40%, #ffd89b 100%); padding: 20px 10px; border-radius: 16px; margin-top: 5px; color: white;">
+                            🌿 ПРИРОДА
+                        </div>
+                    </label>
+                    <label style="flex: 1; text-align: center; cursor: pointer;">
+                        <input type="radio" name="background" value="ocean">
+                        <div style="background: linear-gradient(135deg, #003973 0%, #00b4db 100%); padding: 20px 10px; border-radius: 16px; margin-top: 5px; color: white;">
+                            🌊 ОКЕАН
+                        </div>
+                    </label>
+                    <label style="flex: 1; text-align: center; cursor: pointer;">
+                        <input type="radio" name="background" value="space">
+                        <div style="background: linear-gradient(135deg, #0f0c29 0%, #302b63 100%); padding: 20px 10px; border-radius: 16px; margin-top: 5px; color: white;">
+                            🚀 КОСМОС
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <button type="submit" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #ffd700, #ff8c00); color: #000; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">🧩 СОЗДАТЬ ПАЗЛ</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<div>
+    <h1>🧩 Мои пазлы</h1>
+    
+    {% if puzzles %}
+        <div style="display: grid; gap: 1rem; margin-top: 1rem;">
+            {% for puzzle in puzzles %}
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <div>
+                    <strong>{{ puzzle.name }}</strong>
+                    <span style="margin-left: 10px; color: #666;">📝 {{ puzzle.word }}</span>
+                    <span style="margin-left: 10px; font-size: 0.8rem; color: #888;">📅 {{ puzzle.created_at.strftime('%d.%m.%Y') }}</span>
+                </div>
+                <div>
+                    <a href="{{ url_for('play_puzzle', puzzle_id=puzzle.id) }}" class="btn btn-primary" style="padding: 5px 15px; margin-right: 10px;" target="_blank">🧩 Играть</a>
+                    <a href="{{ url_for('delete_puzzle', puzzle_id=puzzle.id) }}" class="btn btn-danger" style="padding: 5px 15px;" onclick="return confirm('Удалить пазл?')">🗑 Удалить</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card" style="text-align: center;">
+            <p>У вас пока нет созданных пазлов</p>
+            <a href="{{ url_for('create_puzzle') }}" class="btn btn-primary">➕ Создать первый пазл</a>
+        </div>
+    {% endif %}
+    
+    <div style="margin-top: 2rem;">
+        <a href="{{ url_for('dashboard') }}" class="btn" style="background: #666;">← Назад</a>
+    </div>
+</div>
+{% endblock %}
