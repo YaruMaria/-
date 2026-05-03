@@ -1,94 +1,107 @@
 import os
-from flask import Flask, render_template, redirect, url_for, request, flash
+from flask import Flask, render_template, redirect, url_for, request, flash, session
+from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'dev-key-12345'  # Секретный ключ для сессий
+app.config['SECRET_KEY'] = 'dev-key-12345'
+app.config['REMEMBER_COOKIE_DURATION'] = 0
+app.config['SESSION_PERMANENT'] = False
 
-# Настройка менеджера авторизации
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'login'  # Куда перенаправлять неавторизованных
-login_manager.login_message = "Пожалуйста, войдите, чтобы увидеть эту страницу."
+# Настройка базы данных SQLite
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Временная база данных в памяти (Имя: {пароль, id})
-# В реальном проекте здесь должна быть база данных (SQLite/PostgreSQL)
-users_db = {
-    "admin": {"password": generate_password_hash("1234"), "id": "1"}
-}
+db = SQLAlchemy(app)
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'
 
 
-# Класс пользователя для Flask-Login
-class User(UserMixin):
-    def __init__(self, id, username):
-        self.id = id
-        self.username = username
+# Модель пользователя для Базы Данных
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(150), unique=True, nullable=False)
+    password = db.Column(db.String(150), nullable=False)
 
 
 @login_manager.user_loader
 def load_user(user_id):
-    for username, data in users_db.items():
-        if data['id'] == user_id:
-            return User(user_id, username)
-    return None
+    return User.query.get(int(user_id))
 
 
-# ГЛАВНАЯ СТРАНИЦА (теперь закрыта декоратором)
+# Создание базы данных перед запуском
+with app.app_context():
+    db.create_all()
+
+# Данные для музыкальной игры
+durations_data = [
+    {'id': 'whole', 'name': 'Целая нота', 'value': 1.0},
+    {'id': 'half', 'name': 'Половинная', 'value': 0.5},
+    {'id': 'quarter', 'name': 'Четвертная', 'value': 0.25},
+    {'id': 'eighth', 'name': 'Восьмая', 'value': 0.125}
+]
+
+
 @app.route('/')
-@login_required
 def index():
-    return render_template('index.html', name=current_user.username)
+    """Главная страница - перенаправляет на логин"""
+    return redirect(url_for('login'))
 
 
-# СТРАНИЦА ВХОДА
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
-
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
 
-        user_data = users_db.get(username)
-        if user_data and check_password_hash(user_data['password'], password):
-            user_obj = User(user_data['id'], username)
-            login_user(user_obj)
-            return redirect(url_for('index'))
+        user = User.query.filter_by(username=username).first()
+        if user and check_password_hash(user.password, password):
+            # Говорим Flask, что сессия НЕ постоянная
+            session.permanent = False
+            # login_user БЕЗ параметра remember=True
+            login_user(user, remember=False)
+            return redirect(url_for('music_school'))
         else:
-            flash('Неверное имя пользователя или пароль')
+            flash('Ошибка! Проверьте данные.')
 
     return render_template('login.html')
 
 
-# РЕГИСТРАЦИЯ
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
 
-        if username in users_db:
-            flash('Пользователь уже существует')
+        # Проверка, нет ли уже такого пользователя
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user:
+            flash('Такой пользователь уже есть!')
         else:
-            # Добавляем в нашу "базу"
-            new_id = str(len(users_db) + 1)
-            users_db[username] = {
-                "password": generate_password_hash(password),
-                "id": new_id
-            }
-            flash('Регистрация успешна! Теперь войдите.')
+            hashed_pw = generate_password_hash(password)
+            new_user = User(username=username, password=hashed_pw)
+            db.session.add(new_user)
+            db.session.commit()
+            flash('Успешно! Теперь войдите.')
             return redirect(url_for('login'))
 
     return render_template('register.html')
 
 
-# ВЫХОД
-@app.route('/logout')
+@app.route('/music_school')
 @login_required
+def music_school():
+    """Музыкальная школа - доступна только после логина"""
+    return render_template('music_school.html', durations=durations_data)
+
+
+@app.route('/logout')
 def logout():
     logout_user()
+    session.clear()
+    flash('Вы вышли из системы')
     return redirect(url_for('login'))
 
 

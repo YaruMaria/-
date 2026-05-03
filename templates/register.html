@@ -1,27 +1,22 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Регистрация учителя</title>
-    <!-- Подключаем тот же файл стилей -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="auth-card">
-        <h2>Создать аккаунт</h2>
-        <form method="post">
-            <div class="input-group">
-                <input type="text" name="username" placeholder="Придумайте логин" required>
-            </div>
-            <div class="input-group">
-                <input type="password" name="password" placeholder="Придумайте пароль" required>
-            </div>
-            <!-- Кнопка автоматически станет стильной благодаря CSS -->
-            <button type="submit">Зарегистрироваться</button>
-        </form>
-        <div class="links">
-            <p>Уже есть аккаунт? <a href="{{ url_for('login') }}">Войти</a></p>
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width: 400px; margin: 50px auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+    <h2 style="text-align: center; color: #ff85a2;">Регистрация</h2>
+    <form method="post">
+        <div style="margin-bottom: 15px;">
+            <input type="text" name="username" placeholder="Придумайте логин" required
+                   style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 10px;">
         </div>
-    </div>
-</body>
-</html>
+        <div style="margin-bottom: 15px;">
+            <input type="password" name="password" placeholder="Придумайте пароль" required
+                   style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 10px;">
+        </div>
+        <button type="submit" style="width: 100%; padding: 10px; background: #7fb3ff; color: white; border: none; border-radius: 10px; font-size: 16px; cursor: pointer;">
+            Зарегистрироваться
+        </button>
+    </form>
+    <p style="text-align: center; margin-top: 15px;">
+        Уже есть аккаунт? <a href="{{ url_for('login') }}" style="color: #7fb3ff;">Войти</a>
+    </p>
+</div>
+{% endblock %}

@@ -1,25 +1,22 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Вход для учителей</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="auth-card">
-        <h2>Личный кабинет</h2>
-        <form method="post">
-            <div class="input-group">
-                <input type="text" name="username" placeholder="Имя пользователя" required>
-            </div>
-            <div class="input-group">
-                <input type="password" name="password" placeholder="Пароль" required>
-            </div>
-            <button type="submit">Войти в систему</button>
-        </form>
-        <div class="links">
-            <p>Нет аккаунта? <a href="{{ url_for('register') }}">Зарегистрироваться</a></p>
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width: 400px; margin: 50px auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+    <h2 style="text-align: center; color: #ff85a2;">Вход в Музыкальную школу</h2>
+    <form method="post">
+        <div style="margin-bottom: 15px;">
+            <input type="text" name="username" placeholder="Имя пользователя" required 
+                   style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 10px;">
         </div>
-    </div>
-</body>
-</html>
+        <div style="margin-bottom: 15px;">
+            <input type="password" name="password" placeholder="Пароль" required
+                   style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 10px;">
+        </div>
+        <button type="submit" style="width: 100%; padding: 10px; background: #ff85a2; color: white; border: none; border-radius: 10px; font-size: 16px; cursor: pointer;">
+            Войти
+        </button>
+    </form>
+    <p style="text-align: center; margin-top: 15px;">
+        Нет аккаунта? <a href="{{ url_for('register') }}" style="color: #ff85a2;">Зарегистрироваться</a>
+    </p>
+</div>
+{% endblock %}
