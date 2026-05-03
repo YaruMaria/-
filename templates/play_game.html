@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width: 1200px; margin: 0 auto;">
+    <div class="card">
+        <h1>🎮 {{ game.name }}</h1>
+        <p style="color: #666;">Соедините картинку с правильной подписью</p>
+        
+        <div id="gameArea">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                <!-- Картинки -->
+                <div>
+                    <h3>🖼️ Картинки</h3>
+                    <div id="imagesContainer" style="display: grid; gap: 1rem;">
+                        {% for q in questions %}
+                        <div class="image-card" data-id="{{ q.id }}" data-pair="{{ loop.index0 }}" style="border: 3px solid #ddd; border-radius: 12px; padding: 1rem; cursor: pointer; transition: all 0.3s;">
+                            <img src="{{ q.image_url }}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px;">
+                            <div class="matched-text" style="margin-top: 10px; font-weight: bold; display: none;"></div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Подписи -->
+                <div>
+                    <h3>📝 Подписи</h3>
+                    <div id="textsContainer" style="display: grid; gap: 1rem;">
+                        {% for text in shuffled_texts %}
+                        <div class="text-card" data-text="{{ text }}" data-pair="" style="border: 3px solid #ddd; border-radius: 12px; padding: 1rem; cursor: pointer; transition: all 0.3s;">
+                            {{ text }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem; text-align: center;">
+                <button id="submitBtn" class="btn btn-primary" style="padding: 15px 40px; font-size: 18px;">✅ Проверить</button>
+            </div>
+        </div>
+
+        <div id="resultArea" style="display: none; text-align: center;">
+            <div id="resultMessage"></div>
+            <button onclick="location.reload()" class="btn btn-primary">🔄 Играть снова</button>
+            <a href="{{ url_for('dashboard') }}" class="btn">🏠 На главную</a>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Цвета для пар */
+    .pair-0 { border-color: #10b981 !important; background: #d1fae5 !important; } /* зеленый */
+    .pair-1 { border-color: #3b82f6 !important; background: #dbeafe !important; } /* голубой */
+    .pair-2 { border-color: #f59e0b !important; background: #fed7aa !important; } /* желтый */
+    .pair-3 { border-color: #ec4899 !important; background: #fce7f3 !important; } /* розовый */
+    .pair-4 { border-color: #8b5cf6 !important; background: #ede9fe !important; } /* фиолетовый */
+    .pair-5 { border-color: #ef4444 !important; background: #fee2e2 !important; } /* красный */
+    .pair-6 { border-color: #14b8a6 !important; background: #ccfbf1 !important; } /* бирюзовый */
+    .pair-7 { border-color: #f97316 !important; background: #ffedd5 !important; } /* оранжевый */
+
+    .image-card.selected, .text-card.selected {
+        transform: scale(1.02);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .image-card.matched, .text-card.matched {
+        cursor: default;
+        pointer-events: none;
+        opacity: 0.8;
+    }
+</style>
+
+<script>
+    let matches = {};
+    let selectedType = null;
+    let selectedId = null;
+    let nextPairColor = 0;
+    let pairColors = {};
+
+    const imagesContainer = document.getElementById('imagesContainer');
+    const textsContainer = document.getElementById('textsContainer');
+
+    // Функция для получения следующего цвета
+    function getNextColor() {
+        const color = nextPairColor;
+        nextPairColor = (nextPairColor + 1) % 8;
+        return color;
+    }
+
+    // Применяем цвет к паре
+    function applyColorToPair(imageCard, textCard, colorIndex) {
+        imageCard.classList.add(`pair-${colorIndex}`);
+        textCard.classList.add(`pair-${colorIndex}`);
+        imageCard.dataset.pairColor = colorIndex;
+        textCard.dataset.pairColor = colorIndex;
+    }
+
+    // Обработчики для картинок
+    document.querySelectorAll('.image-card').forEach(card => {
+        card.addEventListener('click', () => {
+            if (card.classList.contains('matched')) return;
+
+            if (selectedType === 'image') {
+                // Снимаем выделение
+                document.querySelectorAll('.image-card').forEach(c => c.classList.remove('selected'));
+                selectedType = null;
+                selectedId = null;
+            } else if (selectedType === 'text') {
+                // Соединяем
+                const imageId = card.dataset.id;
+                const text = selectedId;
+                const textCard = document.querySelector(`.text-card[data-text="${text}"]`);
+
+                if (!matches[imageId]) {
+                    matches[imageId] = text;
+                    card.classList.add('matched');
+                    textCard.classList.add('matched');
+
+                    // Получаем цвет для этой пары
+                    const colorIndex = getNextColor();
+                    applyColorToPair(card, textCard, colorIndex);
+
+                    card.querySelector('.matched-text').innerHTML = `✓ ${text}`;
+                    card.querySelector('.matched-text').style.display = 'block';
+                }
+
+                // Снимаем выделение
+                document.querySelectorAll('.text-card').forEach(c => c.classList.remove('selected'));
+                document.querySelectorAll('.image-card').forEach(c => c.classList.remove('selected'));
+                selectedType = null;
+                selectedId = null;
+            } else {
+                // Выделяем картинку
+                document.querySelectorAll('.image-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                selectedType = 'image';
+                selectedId = card.dataset.id;
+            }
+        });
+    });
+
+    // Обработчики для подписей
+    document.querySelectorAll('.text-card').forEach(card => {
+        card.addEventListener('click', () => {
+            if (card.classList.contains('matched')) return;
+
+            if (selectedType === 'text') {
+                // Снимаем выделение
+                document.querySelectorAll('.text-card').forEach(c => c.classList.remove('selected'));
+                selectedType = null;
+                selectedId = null;
+            } else if (selectedType === 'image') {
+                // Соединяем
+                const imageId = selectedId;
+                const text = card.dataset.text;
+                const imageCard = document.querySelector(`.image-card[data-id="${imageId}"]`);
+
+                if (!matches[imageId]) {
+                    matches[imageId] = text;
+                    imageCard.classList.add('matched');
+                    card.classList.add('matched');
+
+                    // Получаем цвет для этой пары
+                    const colorIndex = getNextColor();
+                    applyColorToPair(imageCard, card, colorIndex);
+
+                    imageCard.querySelector('.matched-text').innerHTML = `✓ ${text}`;
+                    imageCard.querySelector('.matched-text').style.display = 'block';
+                }
+
+                // Снимаем выделение
+                document.querySelectorAll('.image-card').forEach(c => c.classList.remove('selected'));
+                document.querySelectorAll('.text-card').forEach(c => c.classList.remove('selected'));
+                selectedType = null;
+                selectedId = null;
+            } else {
+                // Выделяем подпись
+                document.querySelectorAll('.text-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                selectedType = 'text';
+                selectedId = card.dataset.text;
+            }
+        });
+    });
+
+    document.getElementById('submitBtn').onclick = async () => {
+        const totalQuestions = {{ questions|length }};
+        const matchedCount = Object.keys(matches).length;
+
+        if (matchedCount < totalQuestions) {
+            alert(`Соедините все картинки! Осталось ${totalQuestions - matchedCount}`);
+            return;
+        }
+
+        const response = await fetch('/check_game_result', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                game_id: {{ game.id }},
+                matches: matches
+            })
+        });
+
+        const result = await response.json();
+
+        document.getElementById('gameArea').style.display = 'none';
+        document.getElementById('resultArea').style.display = 'block';
+
+        const messageDiv = document.getElementById('resultMessage');
+        if (result.passed) {
+            messageDiv.innerHTML = `
+                <div style="background: #d1fae5; padding: 2rem; border-radius: 16px;">
+                    <h2 style="color: #10b981;">🎉 ПОЗДРАВЛЯЮ! 🎉</h2>
+                    <p style="font-size: 24px;">Вы правильно соединили ${result.correct} из ${result.total}</p>
+                    <p>Ваш результат: ${Math.round(result.score)}%</p>
+                    <p style="margin-top: 20px;">⭐ Вы заработали звезду! Сейчас появится окно для начисления...</p>
+                </div>
+            `;
+
+            // Ждем 1 секунду и показываем выбор ученика
+            setTimeout(() => {
+                window.location.href = '/select_student_for_star';
+            }, 1500);
+        } else {
+            messageDiv.innerHTML = `
+                <div style="background: #fee2e2; padding: 2rem; border-radius: 16px;">
+                    <h2 style="color: #ef4444;">😔 Попробуйте еще раз!</h2>
+                    <p>Вы правильно соединили ${result.correct} из ${result.total}</p>
+                    <p>Нужно набрать 70% чтобы получить звезду.</p>
+                </div>
+            `;
+        }
+    };
+</script>
+{% endblock %}

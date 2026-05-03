@@ -3,112 +3,56 @@
 <div>
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
         <h1>👨‍🎓 {{ student.name }}</h1>
-        <div>
-            <button onclick="toggleEditForm()" class="btn btn-primary" style="margin-right: 10px;">✏️ Редактировать</button>
-            <a href="{{ url_for('dashboard') }}" class="btn" style="background: #666; color: white;">← Назад</a>
-        </div>
-    </div>
-
-    <!-- Карточка с информацией -->
-    <div class="card" id="infoCard">
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
-            <div>
-                <p><strong>👤 Имя:</strong> {{ student.name }}</p>
-                <p><strong>🎂 Возраст:</strong> {{ student.age or 'Не указан' }}</p>
-                <p><strong>📚 Уровень:</strong>
-                    {% for l in levels %}
-                        {% if l.id == student.level %}{{ l.name }}{% endif %}
-                    {% endfor %}
-                </p>
-            </div>
-            <div>
-                <p><strong>🎯 Предмет:</strong> {{ subject_name or 'Не указан' }}</p>
-                <p><strong>📅 Дата начала:</strong> {{ student.start_date or 'Не указана' }}</p>
-            </div>
-        </div>
-        <div style="margin-top: 1rem;">
-            <p><strong>🎯 Цель обучения:</strong></p>
-            <p style="background: #f7fafc; padding: 10px; border-radius: 8px;">{{ student.goal or 'Не указана' }}</p>
-        </div>
-        <div style="margin-top: 1rem;">
-            <p><strong>📝 Заметки:</strong></p>
-            <p style="background: #f7fafc; padding: 10px; border-radius: 8px;">{{ student.notes or 'Нет заметок' }}</p>
-        </div>
-    </div>
-
-    <!-- Форма редактирования -->
-    <div class="card" id="editForm" style="display: none;">
-        <h2>✏️ Редактировать данные ученика</h2>
-        <form method="post" action="{{ url_for('edit_student', student_id=student.id) }}">
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
-                <div>
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">👤 Имя ученика *</label>
-                    <input type="text" name="name" value="{{ student.name }}" required
-                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
-                </div>
-                <div>
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">🎂 Возраст</label>
-                    <input type="number" name="age" value="{{ student.age or '' }}"
-                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
-                </div>
-                <div>
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">📚 Уровень</label>
-                    <select name="level" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
-                        <option value="">Выберите...</option>
-                        {% for level in levels %}
-                        <option value="{{ level.id }}" {% if student.level == level.id %}selected{% endif %}>{{ level.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div>
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">🎯 Предмет</label>
-                    <select name="subject" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
-                        <option value="">Выберите...</option>
-                        {% for subject in subjects %}
-                        <option value="{{ subject.id }}" {% if student.subject == subject.id %}selected{% endif %}>{{ subject.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div>
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">📅 Дата начала</label>
-                    <input type="date" name="start_date" value="{{ student.start_date or '' }}"
-                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
-                </div>
-                <div style="grid-column: span 2;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">🎯 Цель обучения</label>
-                    <textarea name="goal" rows="2" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">{{ student.goal or '' }}</textarea>
-                </div>
-                <div style="grid-column: span 2;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">📝 Заметки</label>
-                    <textarea name="notes" rows="2" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">{{ student.notes or '' }}</textarea>
-                </div>
-            </div>
-            <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">💾 Сохранить изменения</button>
-            <button type="button" onclick="toggleEditForm()" class="btn" style="margin-top: 1rem; background: #666;">❌ Отмена</button>
-        </form>
+        <a href="{{ url_for('dashboard') }}" class="btn" style="background: #666; color: white;">← Назад</a>
     </div>
 
     <div class="card">
-        <h2>📊 Прогресс ученика</h2>
-        <p style="color: #666;">Здесь будет отображаться прогресс ученика по предметам</p>
-        <div style="background: #f7fafc; padding: 2rem; text-align: center; border-radius: 12px;">
-            🚧 В разработке...
+        <h2>⭐ Звезды ученика</h2>
+        <div style="font-size: 3rem; text-align: center; padding: 1rem;">
+            {{ student.stars or 0 }} ⭐
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>📜 История начисления звезд</h2>
+        {% if star_history %}
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f7fafc;">
+                        <th style="padding: 10px;">Дата</th>
+                        <th style="padding: 10px;">Игра</th>
+                        <th style="padding: 10px;">Звезд</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for history in star_history %}
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 10px;">{{ history.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                        <td style="padding: 10px;">{{ history.game.name }}</td>
+                        <td style="padding: 10px; color: gold;">⭐ {{ history.stars_earned }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>Пока нет начисленных звезд</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2>📝 Информация об ученике</h2>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+            <div><strong>Имя:</strong> {{ student.name }}</div>
+            <div><strong>Возраст:</strong> {{ student.age or 'Не указан' }}</div>
+            <div><strong>Уровень:</strong>
+                {% for l in levels %}
+                    {% if l.id == student.level %}{{ l.name }}{% endif %}
+                {% endfor %}
+            </div>
+            <div><strong>Предмет:</strong> {{ subject_name or 'Не указан' }}</div>
+            <div><strong>Дата начала:</strong> {{ student.start_date or 'Не указана' }}</div>
+            <div><strong>Цель:</strong> {{ student.goal or 'Не указана' }}</div>
         </div>
     </div>
 </div>
-
-<script>
-    function toggleEditForm() {
-        const infoCard = document.getElementById('infoCard');
-        const editForm = document.getElementById('editForm');
-        
-        if (editForm.style.display === 'none') {
-            infoCard.style.display = 'none';
-            editForm.style.display = 'block';
-        } else {
-            infoCard.style.display = 'block';
-            editForm.style.display = 'none';
-        }
-    }
-</script>
 {% endblock %}

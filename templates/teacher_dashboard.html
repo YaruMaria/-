@@ -2,116 +2,268 @@
 {% block content %}
 <div>
     <h1>👨‍🏫 Добро пожаловать, {{ user.full_name }}!</h1>
-    <p style="color: #666; margin-bottom: 2rem;">
-        📚 Ваш предмет: <strong>
-            {% for s in subjects %}
-                {% if s.id == user.subject %}{{ s.name }}{% endif %}
-            {% endfor %}
-        </strong>
-    </p>
 
-    <div class="card">
-        <h2>🎓 Мои ученики</h2>
+    <div style="margin-bottom: 2rem;">
+        <button onclick="showTab('students')" id="tabStudents" class="tab-btn active">🎓 Мои ученики</button>
+        <button onclick="showTab('games')" id="tabGames" class="tab-btn">🎮 Мои игры</button>
+        <button onclick="showTab('createGame')" id="tabCreate" class="tab-btn">✨ Создать игру</button>
+    </div>
 
-        {% if students %}
-            <div style="display: grid; gap: 1rem; margin-top: 1rem;">
-                {% for student in students %}
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #f7fafc; border-radius: 12px;">
-                    <div>
-                        <a href="{{ url_for('view_student', student_id=student.id) }}"
-                           style="font-weight: 600; font-size: 1.1rem; color: #667eea; text-decoration: none;">
-                            {{ student.name }}
-                        </a>
-                        {% if student.level %}
-                        <span style="margin-left: 10px; padding: 2px 8px; background: #e0e7ff; border-radius: 20px; font-size: 0.8rem;">
-                            {% for l in levels %}
-                                {% if l.id == student.level %}{{ l.name }}{% endif %}
-                            {% endfor %}
-                        </span>
-                        {% endif %}
-                        {% if student.age %}
-                        <span style="margin-left: 5px; font-size: 0.8rem; color: #666;">🎂 {{ student.age }} лет</span>
-                        {% endif %}
-                        <div style="font-size: 0.8rem; color: #888; margin-top: 5px;">
-                            📅 {{ student.start_date or 'Дата не указана' }}
+    <!-- Вкладка: Мои ученики -->
+    <div id="studentsTab" class="tab-content">
+        <div class="card">
+            <h2>🎓 Мои ученики</h2>
+            {% if students %}
+                <div style="display: grid; gap: 1rem;">
+                    {% for student in students %}
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #f7fafc; border-radius: 12px;">
+                        <div>
+                            <a href="{{ url_for('view_student', student_id=student.id) }}"
+                               style="font-weight: 600; font-size: 1.1rem; color: #667eea; text-decoration: none;">
+                                {{ student.name }}
+                            </a>
+                            <span style="margin-left: 10px; color: gold;">⭐ {{ student.stars or 0 }} звезд</span>
                         </div>
-                    </div>
-                    <div>
-                        <a href="{{ url_for('view_student', student_id=student.id) }}"
-                           class="btn btn-primary"
-                           style="padding: 5px 15px; margin-right: 10px;">
-                            👁️ Просмотр
-                        </a>
                         <a href="{{ url_for('delete_student', student_id=student.id) }}"
                            class="btn btn-danger"
-                           style="padding: 5px 15px;"
                            onclick="return confirm('Удалить ученика?')">
                             ❌ Удалить
                         </a>
                     </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <p style="color: #666;">У вас пока нет учеников. Добавьте первого!</p>
-        {% endif %}
-    </div>
+            {% else %}
+                <p>У вас пока нет учеников</p>
+            {% endif %}
+        </div>
 
-    <div class="card">
-        <h2>➕ Добавить ученика</h2>
-        <form method="post" action="{{ url_for('add_student') }}">
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
-                <div>
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">👤 Имя ученика *</label>
-                    <input type="text" name="name" required
-                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
-                </div>
-                <div>
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">🎂 Возраст</label>
-                    <input type="number" name="age"
-                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
-                </div>
-                <div>
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">📚 Уровень</label>
-                    <select name="level" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
-                        <option value="">Выберите...</option>
+        <div class="card">
+            <h2>➕ Добавить ученика</h2>
+            <form method="post" action="{{ url_for('add_student') }}">
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                    <input type="text" name="name" placeholder="Имя ученика" required style="padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                    <input type="number" name="age" placeholder="Возраст" style="padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                    <select name="level" style="padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                        <option value="">Уровень</option>
                         {% for level in levels %}
                         <option value="{{ level.id }}">{{ level.name }}</option>
                         {% endfor %}
                     </select>
-                </div>
-                <div>
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">🎯 Предмет</label>
-                    <select name="subject" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
-                        <option value="">Выберите...</option>
+                    <select name="subject" style="padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                        <option value="">Предмет</option>
                         {% for subject in subjects %}
                         <option value="{{ subject.id }}">{{ subject.name }}</option>
                         {% endfor %}
                     </select>
+                    <input type="date" name="start_date" style="padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                    <textarea name="goal" placeholder="Цель обучения" rows="2" style="padding: 10px; border-radius: 8px; border: 1px solid #ddd; grid-column: span 2;"></textarea>
                 </div>
-                <div>
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">📅 Дата начала</label>
-                    <input type="date" name="start_date"
-                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
-                </div>
-                <div style="grid-column: span 2;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">🎯 Цель обучения</label>
-                    <textarea name="goal" rows="2" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;"></textarea>
-                </div>
-                <div style="grid-column: span 2;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">📝 Заметки</label>
-                    <textarea name="notes" rows="2" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;"></textarea>
-                </div>
-            </div>
-            <button type="submit" class="btn btn-primary" style="margin-top: 1rem; width: 100%;">➕ Добавить ученика</button>
-        </form>
+                <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">➕ Добавить</button>
+            </form>
+        </div>
     </div>
 
-    <div class="card">
-        <h2>🎮 Быстрый доступ</h2>
-        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-            <a href="{{ url_for('music_school') }}" class="btn btn-primary">🎵 Играть в музыкальную игру</a>
+    <!-- Вкладка: Мои игры -->
+    <div id="gamesTab" class="tab-content" style="display: none;">
+        <div class="card">
+            <h2>🎮 Мои созданные игры</h2>
+            {% if games %}
+                <div style="display: grid; gap: 1rem;">
+                    {% for game in games %}
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #f7fafc; border-radius: 12px;">
+                        <div>
+                            <strong>{{ game.name }}</strong>
+                            <span style="font-size: 0.8rem; color: #888; margin-left: 10px;">
+                                📅 {{ game.created_at.strftime('%d.%m.%Y') }}
+                            </span>
+                            <span style="font-size: 0.8rem; color: #888;">
+                                📝 {{ game.questions|length }} вопросов
+                            </span>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('play_game', game_id=game.id) }}" class="btn btn-primary" style="padding: 5px 15px; margin-right: 10px;" target="_blank">🎮 Играть</a>
+                            <a href="{{ url_for('delete_game', game_id=game.id) }}" class="btn btn-danger" style="padding: 5px 15px;" onclick="return confirm('Удалить игру?')">🗑 Удалить</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p>У вас пока нет созданных игр</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Вкладка: Создать игру -->
+    <div id="createGameTab" class="tab-content" style="display: none;">
+        <div class="card">
+            <h2>✨ Создать новую игру</h2>
+            <form id="createGameForm" method="post" action="{{ url_for('create_game') }}">
+                <div style="margin-bottom: 1rem;">
+                    <label>Название игры *</label>
+                    <input type="text" name="game_name" id="gameName" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                </div>
+
+                <div id="questionsContainer">
+                    <h3>Вопросы</h3>
+                    <div id="questionList"></div>
+                    <button type="button" onclick="addQuestion()" class="btn btn-primary" style="margin-top: 1rem;">➕ Добавить вопрос</button>
+                </div>
+
+                <input type="hidden" name="questions" id="questionsJson">
+                <button type="submit" class="btn btn-primary" style="margin-top: 2rem; width: 100%;">💾 Сохранить игру</button>
+            </form>
         </div>
     </div>
 </div>
+
+<style>
+    .tab-btn {
+        padding: 10px 20px;
+        margin-right: 10px;
+        border: none;
+        background: #e2e8f0;
+        cursor: pointer;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: all 0.3s;
+    }
+    .tab-btn.active {
+        background: #667eea;
+        color: white;
+    }
+    .question-item {
+        background: #f7fafc;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    }
+    .image-preview {
+        max-width: 200px;
+        margin-top: 10px;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+    }
+</style>
+
+<script>
+    let questionCounter = 0;
+
+    function showTab(tabName) {
+        document.getElementById('studentsTab').style.display = 'none';
+        document.getElementById('gamesTab').style.display = 'none';
+        document.getElementById('createGameTab').style.display = 'none';
+
+        document.getElementById('tabStudents').classList.remove('active');
+        document.getElementById('tabGames').classList.remove('active');
+        document.getElementById('tabCreate').classList.remove('active');
+
+        if (tabName === 'students') {
+            document.getElementById('studentsTab').style.display = 'block';
+            document.getElementById('tabStudents').classList.add('active');
+        } else if (tabName === 'games') {
+            document.getElementById('gamesTab').style.display = 'block';
+            document.getElementById('tabGames').classList.add('active');
+        } else {
+            document.getElementById('createGameTab').style.display = 'block';
+            document.getElementById('tabCreate').classList.add('active');
+        }
+    }
+
+    function addQuestion() {
+        const id = questionCounter++;
+        const container = document.getElementById('questionList');
+        const div = document.createElement('div');
+        div.className = 'question-item';
+        div.id = `question_${id}`;
+        div.innerHTML = `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <strong>Вопрос ${id + 1}</strong>
+                <button type="button" onclick="removeQuestion(${id})" style="background: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">🗑 Удалить</button>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                    <label>📸 Картинка</label>
+                    <div style="margin-bottom: 10px;">
+                        <input type="file" id="uploadInput_${id}" accept="image/*" style="margin-bottom: 10px;" onchange="uploadImage(${id}, this)">
+                        <small style="color: #666;">Выберите картинку с компьютера</small>
+                    </div>
+                    <div id="selectedImage_${id}"></div>
+                    <input type="hidden" id="imageUrl_${id}" value="">
+                </div>
+                <div>
+                    <label>✏️ Правильная подпись</label>
+                    <input type="text" id="text_${id}" placeholder="Например: Девочка с шариком" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ddd;">
+                </div>
+            </div>
+        `;
+        container.appendChild(div);
+    }
+
+    function removeQuestion(id) {
+        const div = document.getElementById(`question_${id}`);
+        div.remove();
+    }
+
+    async function uploadImage(questionId, input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        const response = await fetch('/upload_image', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+        if (data.url) {
+            document.getElementById(`imageUrl_${questionId}`).value = data.url;
+            const previewDiv = document.getElementById(`selectedImage_${questionId}`);
+            previewDiv.innerHTML = `<img src="${data.url}" class="image-preview"><br><small style="color: green;">✓ Картинка загружена</small>`;
+        }
+    }
+
+    document.getElementById('createGameForm').onsubmit = function(e) {
+        const gameName = document.getElementById('gameName').value;
+        if (!gameName) {
+            alert('Введите название игры');
+            e.preventDefault();
+            return false;
+        }
+
+        const questions = [];
+        const questionItems = document.querySelectorAll('.question-item');
+
+        for (let i = 0; i < questionItems.length; i++) {
+            const item = questionItems[i];
+            const id = item.id.split('_')[1];
+            const imageUrl = document.getElementById(`imageUrl_${id}`).value;
+            const text = document.getElementById(`text_${id}`).value;
+
+            if (!imageUrl || !text) {
+                alert(`Заполните все поля в вопросе ${i + 1} (нужна картинка и подпись)`);
+                e.preventDefault();
+                return false;
+            }
+
+            questions.push({
+                image_url: imageUrl,
+                text: text
+            });
+        }
+
+        if (questions.length === 0) {
+            alert('Добавьте хотя бы один вопрос');
+            e.preventDefault();
+            return false;
+        }
+
+        document.getElementById('questionsJson').value = JSON.stringify(questions);
+        return true;
+    };
+
+    // Добавляем первый вопрос автоматически
+    addQuestion();
+</script>
 {% endblock %}
