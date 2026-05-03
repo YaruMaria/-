@@ -3,46 +3,107 @@
 <div>
     <h1>👨‍🏫 Добро пожаловать, {{ user.full_name }}!</h1>
     <p style="color: #666; margin-bottom: 2rem;">
-        📚 Ваш предмет: <strong>{{ user.subject or 'Не указан' }}</strong>
+        📚 Ваш предмет: <strong>
+            {% for s in subjects %}
+                {% if s.id == user.subject %}{{ s.name }}{% endif %}
+            {% endfor %}
+        </strong>
     </p>
 
     <div class="card">
         <h2>🎓 Мои ученики</h2>
-        
+
         {% if students %}
             <div style="display: grid; gap: 1rem; margin-top: 1rem;">
                 {% for student in students %}
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: #f7fafc; border-radius: 12px;">
                     <div>
-                        <strong>{{ student.name }}</strong>
+                        <a href="{{ url_for('view_student', student_id=student.id) }}"
+                           style="font-weight: 600; font-size: 1.1rem; color: #667eea; text-decoration: none;">
+                            {{ student.name }}
+                        </a>
                         {% if student.level %}
-                        <span style="margin-left: 10px; color: #667eea;">({{ student.level }})</span>
+                        <span style="margin-left: 10px; padding: 2px 8px; background: #e0e7ff; border-radius: 20px; font-size: 0.8rem;">
+                            {% for l in levels %}
+                                {% if l.id == student.level %}{{ l.name }}{% endif %}
+                            {% endfor %}
+                        </span>
                         {% endif %}
+                        {% if student.age %}
+                        <span style="margin-left: 5px; font-size: 0.8rem; color: #666;">🎂 {{ student.age }} лет</span>
+                        {% endif %}
+                        <div style="font-size: 0.8rem; color: #888; margin-top: 5px;">
+                            📅 {{ student.start_date or 'Дата не указана' }}
+                        </div>
                     </div>
-                    <a href="{{ url_for('delete_student', student_id=student.id) }}" 
-                       class="btn btn-danger" 
-                       style="padding: 5px 15px;"
-                       onclick="return confirm('Удалить ученика?')">
-                        ❌ Удалить
-                    </a>
+                    <div>
+                        <a href="{{ url_for('view_student', student_id=student.id) }}"
+                           class="btn btn-primary"
+                           style="padding: 5px 15px; margin-right: 10px;">
+                            👁️ Просмотр
+                        </a>
+                        <a href="{{ url_for('delete_student', student_id=student.id) }}"
+                           class="btn btn-danger"
+                           style="padding: 5px 15px;"
+                           onclick="return confirm('Удалить ученика?')">
+                            ❌ Удалить
+                        </a>
+                    </div>
                 </div>
                 {% endfor %}
             </div>
         {% else %}
-            <p style="color: #666;">У вас пока нет учеников</p>
+            <p style="color: #666;">У вас пока нет учеников. Добавьте первого!</p>
         {% endif %}
     </div>
 
     <div class="card">
         <h2>➕ Добавить ученика</h2>
         <form method="post" action="{{ url_for('add_student') }}">
-            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                <input type="text" name="student_name" placeholder="Имя ученика" required
-                       style="flex: 2; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
-                <input type="text" name="student_level" placeholder="Уровень (опционально)"
-                       style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
-                <button type="submit" class="btn btn-primary">➕ Добавить</button>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">👤 Имя ученика *</label>
+                    <input type="text" name="name" required
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">🎂 Возраст</label>
+                    <input type="number" name="age"
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">📚 Уровень</label>
+                    <select name="level" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                        <option value="">Выберите...</option>
+                        {% for level in levels %}
+                        <option value="{{ level.id }}">{{ level.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">🎯 Предмет</label>
+                    <select name="subject" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                        <option value="">Выберите...</option>
+                        {% for subject in subjects %}
+                        <option value="{{ subject.id }}">{{ subject.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">📅 Дата начала</label>
+                    <input type="date" name="start_date"
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                </div>
+                <div style="grid-column: span 2;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">🎯 Цель обучения</label>
+                    <textarea name="goal" rows="2" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;"></textarea>
+                </div>
+                <div style="grid-column: span 2;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">📝 Заметки</label>
+                    <textarea name="notes" rows="2" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;"></textarea>
+                </div>
             </div>
+            <button type="submit" class="btn btn-primary" style="margin-top: 1rem; width: 100%;">➕ Добавить ученика</button>
         </form>
     </div>
 

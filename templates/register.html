@@ -1,38 +1,50 @@
 {% extends "base.html" %}
 {% block content %}
-<div style="max-width: 500px; margin: 0 auto;">
+<div style="max-width: 600px; margin: 0 auto;">
     <div class="card">
         <h1 style="text-align: center;">✨ Регистрация</h1>
 
         <form method="post">
-            <div style="margin-bottom: 1rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">👤 Полное имя</label>
-                <input type="text" name="full_name" value="{{ full_name or '' }}" required
-                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">👤 Полное имя *</label>
+                    <input type="text" name="full_name" value="{{ full_name or '' }}" required
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">🔑 Логин *</label>
+                    <input type="text" name="username" value="{{ username or '' }}" required
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">📞 Телефон</label>
+                    <input type="tel" name="phone" value="{{ phone or '' }}"
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">📧 Email</label>
+                    <input type="email" name="email" value="{{ email or '' }}"
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">🔒 Пароль *</label>
+                    <input type="password" name="password" required
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">✅ Подтвердите пароль *</label>
+                    <input type="password" name="confirm_password" required
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                </div>
             </div>
 
             <div style="margin-bottom: 1rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">🔑 Логин</label>
-                <input type="text" name="username" value="{{ username or '' }}" required
-                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
-                <small style="color: #666;">Минимум 3 символа</small>
-            </div>
-
-            <div style="margin-bottom: 1rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">🔒 Пароль</label>
-                <input type="password" name="password" required
-                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
-                <small style="color: #666;">Минимум 4 символа</small>
-            </div>
-
-            <div style="margin-bottom: 1rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">✅ Подтвердите пароль</label>
-                <input type="password" name="confirm_password" required
-                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
-            </div>
-
-            <div style="margin-bottom: 1rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">👨‍🏫 Кто вы?</label>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">👨‍🏫 Кто вы? *</label>
                 <select name="role" id="role" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;"
                         onchange="toggleSubjectField()">
                     <option value="">Выберите...</option>
@@ -42,15 +54,12 @@
             </div>
 
             <div id="subjectField" style="margin-bottom: 1rem; display: none;">
-                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">📚 Какой предмет вы преподаете?</label>
+                <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">📚 Какой предмет вы преподаете? *</label>
                 <select name="subject" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
                     <option value="">Выберите...</option>
-                    <option value="piano" {% if subject == 'piano' %}selected{% endif %}>🎹 Фортепиано</option>
-                    <option value="guitar" {% if subject == 'guitar' %}selected{% endif %}>🎸 Гитара</option>
-                    <option value="violin" {% if subject == 'violin' %}selected{% endif %}>🎻 Скрипка</option>
-                    <option value="drums" {% if subject == 'drums' %}selected{% endif %}>🥁 Ударные</option>
-                    <option value="vocals" {% if subject == 'vocals' %}selected{% endif %}>🎤 Вокал</option>
-                    <option value="theory" {% if subject == 'theory' %}selected{% endif %}>📖 Теория музыки</option>
+                    {% for subject in subjects %}
+                    <option value="{{ subject.id }}">{{ subject.name }}</option>
+                    {% endfor %}
                 </select>
             </div>
 
@@ -71,8 +80,6 @@
         const subjectField = document.getElementById('subjectField');
         subjectField.style.display = role === 'teacher' ? 'block' : 'none';
     }
-
-    // Вызываем при загрузке
     toggleSubjectField();
 </script>
 {% endblock %}
