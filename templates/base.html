@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Chtck - Личный кабинет</title>
+    <style>
+        body { font-family: sans-serif; margin: 40px; background: #f4f4f4; }
+        nav { margin-bottom: 20px; background: #fff; padding: 10px; border-radius: 8px; }
+        nav a { margin-right: 15px; text-decoration: none; color: #333; font-weight: bold; }
+        .container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .flash { color: red; margin-bottom: 10px; }
+        input { display: block; margin-bottom: 10px; padding: 8px; width: 250px; }
+        button { padding: 10px 20px; background: #28a745; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="{{ url_for('index') }}">Главная</a>
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('dashboard') }}">Мои записи</a>
+            <a href="{{ url_for('logout') }}">Выйти ({{ current_user.username }})</a>
+        {% else %}
+            <a href="{{ url_for('login') }}">Войти</a>
+            <a href="{{ url_for('register') }}">Регистрация</a>
+        {% endif %}
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}
+              <div class="flash">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Личный кабинет пользователя {{ current_user.username }}</h2>
+    
+    <p>Здесь будут ваши сохраненные данные. Даже если выключить сайт, они останутся здесь!</p>
+
+    <!-- Пример вывода данных из базы -->
+    <ul>
+        {% for record in records %}
+            <li>{{ record.content }}</li>
+        {% else %}
+            <li>У вас пока нет сохраненных записей.</li>
+        {% endfor %}
+    </ul>
+
+    <hr>
+    <h3>Добавить новую запись</h3>
+    <form action="/add_record" method="POST">
+        <input type="text" name="content" placeholder="Введите текст для сохранения" required>
+        <button type="submit" style="background: #007bff;">Сохранить в базу</button>
+    </form>
+{% endblock %}
